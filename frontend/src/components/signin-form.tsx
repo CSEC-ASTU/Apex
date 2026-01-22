@@ -38,7 +38,7 @@ export function SignInForm({
       if (result.error) {
         setError(result.error.message || "Sign in failed")
       } else {
-        navigate("/")
+        navigate("/dashboard")
       }
     } catch {
       setError("An unexpected error occurred")

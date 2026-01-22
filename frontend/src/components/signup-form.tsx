@@ -52,7 +52,7 @@ export function SignUpForm({
       if (result.error) {
         setError(result.error.message || "Sign up failed")
       } else {
-        navigate("/")
+        navigate("/dashboard")
       }
     } catch {
       setError("An unexpected error occurred")

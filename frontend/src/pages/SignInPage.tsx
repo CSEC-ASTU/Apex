@@ -1,22 +1,25 @@
-import { useNavigate } from "react-router-dom"
+import { Navigate } from "react-router-dom"
 import { SignInForm } from "@/components/signin-form"
-import { Button } from "@/components/ui/button"
 import { useSession } from "@/lib/auth-client"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function SignInPage() {
-  const navigate = useNavigate()
-  const { data: session } = useSession()
+  const { data: session, isPending } = useSession()
 
-  // Redirect if already signed in
-  if (session) {
+  // Show loading while checking auth
+  if (isPending) {
     return (
       <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
-        <div className="w-full max-w-md text-center space-y-4">
-          <p className="text-muted-foreground">You're already signed in.</p>
-          <Button onClick={() => navigate("/")}>Go to Home</Button>
+        <div className="w-full max-w-sm md:max-w-4xl space-y-4">
+          <Skeleton className="h-[400px] w-full rounded-xl" />
         </div>
       </div>
     )
+  }
+
+  // Redirect to dashboard if already signed in
+  if (session) {
+    return <Navigate to="/dashboard" replace />
   }
 
   return (
