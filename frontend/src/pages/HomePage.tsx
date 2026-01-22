@@ -10,6 +10,12 @@ export default function HomePage() {
         </p>
         <div className="flex gap-4 justify-center">
           <a
+            href="/auth"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
+          >
+            Auth Demo
+          </a>
+          <a
             href="https://react.dev"
             target="_blank"
             rel="noopener noreferrer"
