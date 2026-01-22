@@ -2,7 +2,9 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
+import { toNodeHandler } from 'better-auth/node'
 import { config } from './config/index.js'
+import { auth } from './auth.js'
 import { errorHandler } from './middlewares/errorHandler.js'
 import { notFound } from './middlewares/notFound.js'
 import routes from './routes/index.js'
@@ -24,6 +26,9 @@ if (config.nodeEnv === 'development') {
 } else {
   app.use(morgan('combined'))
 }
+
+// Better Auth (must be mounted before express.json)
+app.all('/api/auth/*', toNodeHandler(auth))
 
 // Body parsing
 app.use(express.json())
