@@ -63,6 +63,7 @@ Rules:
     const parsed = JSON.parse(response.text);
 
     return {
+      file,
       success: true,
       error: "",
       fileSummary: parsed
