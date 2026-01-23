@@ -1,11 +1,12 @@
-import {GoogleGenAI} from '@google/genai'
-import { env } from '../env';
+import { GoogleGenAI } from "@google/genai";
 
-const apiKey = env.GEMINI_API_KEY;
+const apiKey = process.env.GEMINI_API_KEY;
+const apiKeyTwo = process.env.GEMINI_API_KEY_TWO;
+
 if (!apiKey) {
-  throw new Error("GEMINI_API_KEY environment variable is not set.");
+  console.warn("⚠️  GEMINI_API_KEY not set - AI features will not work");
 }
 
-export const genAI = new GoogleGenAI({apiKey:process.env.GEMINI_API_KEY!});
-
-export const genAI_Two = new GoogleGenAI({apiKey:process.env.GEMINI_API_KEY_TWO!});
+// Export null if no API key, so consumers can check before using
+export const genAI = apiKey ? new GoogleGenAI({ apiKey }) : null;
+export const genAI_Two = apiKeyTwo ? new GoogleGenAI({ apiKey: apiKeyTwo }) : null;

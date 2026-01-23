@@ -277,7 +277,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\Haile\\OneDrive\\Desktop\\MY-File\\CSEC_SESSIONS\\HACKATHON\\Apex\\backend\\src\\generated\\prisma",
+      "value": "C:\\Users\\hp\\Desktop\\Apex\\backend\\src\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -291,11 +291,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\Haile\\OneDrive\\Desktop\\MY-File\\CSEC_SESSIONS\\HACKATHON\\Apex\\backend\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Users\\hp\\Desktop\\Apex\\backend\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": "../../../.env",
+    "rootEnvPath": null,
     "schemaEnvPath": "../../../.env"
   },
   "relativePath": "../../../prisma",
