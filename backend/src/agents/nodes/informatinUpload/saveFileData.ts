@@ -15,7 +15,7 @@ export const saveInformation = async (state: any) => {
     await prisma.$transaction(async (tx) => {
 
       /* -------------------------------
-         DOCUMENT (ADDED ONLY)
+         DOCUMENT (ADDED ONLY )
       -------------------------------- */
       if (file) {
         await tx.document.create({
