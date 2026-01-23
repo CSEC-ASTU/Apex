@@ -145,7 +145,7 @@ export const dataController = {
     
     async getDocuments(req: Request, res: Response) {
   try {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
 
     if (!projectId) {
       return res.status(400).json({

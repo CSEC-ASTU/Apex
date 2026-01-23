@@ -15,7 +15,7 @@ export const summarizeResponse = async (state: any) => {
             message: "Generating final answer"
         });
 
-        const response = await genAI.models.generateContent({
+        const response = await genAI!.models.generateContent({
             model: "gemini-3-flash-preview",
             contents: `
 Answer the user's question using ONLY the provided data.
