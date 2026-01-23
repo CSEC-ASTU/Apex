@@ -32,4 +32,5 @@ prisma/*.db-journal
 uploads/*
 !uploads/.gitkeep
 .dist
-src/generated/
+src/generated
+/generated/prisma

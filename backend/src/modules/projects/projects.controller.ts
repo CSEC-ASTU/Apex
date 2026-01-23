@@ -14,7 +14,7 @@ export const ProjectsController = {
 
       const userId = req.user!.id;
       const data = CreateProjectSchema.parse(req.body);
-      
+
       console.log("   ✅ Validation passed:", data);
 
       const project = await ProjectsService.createProject(userId, data);
@@ -26,7 +26,7 @@ export const ProjectsController = {
       });
     } catch (error: any) {
       console.log("   ❌ Error:", error.message);
-      
+
       // Better error handling for Zod validation errors
       if (error instanceof ZodError) {
         const errors = error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
@@ -49,10 +49,10 @@ export const ProjectsController = {
     try {
       console.log("📝 GET /projects - List projects request");
       console.log("   User:", req.user?.id || "NO USER");
-      
+
       const userId = req.user!.id;
       const projects = await ProjectsService.getUserProjects(userId);
-      
+
       console.log("   ✅ Found", projects.length, "projects");
 
       res.json({
@@ -73,7 +73,7 @@ export const ProjectsController = {
       const userId = req.user!.id;
       const { projectId } = req.params;
 
-      const project = await ProjectsService.getProjectById(projectId, userId);
+      const project = await ProjectsService.getProjectById(projectId as string, userId);
 
       res.json({
         success: true,
@@ -93,7 +93,7 @@ export const ProjectsController = {
       const { projectId } = req.params;
       const data = UpdateProjectSchema.parse(req.body);
 
-      const project = await ProjectsService.updateProject(projectId, userId, data);
+      const project = await ProjectsService.updateProject(projectId as string, userId, data);
 
       res.json({
         success: true,
@@ -121,7 +121,7 @@ export const ProjectsController = {
       const userId = req.user!.id;
       const { projectId } = req.params;
 
-      await ProjectsService.deleteProject(projectId, userId);
+      await ProjectsService.deleteProject(projectId as string, userId);
 
       res.json({
         success: true,
