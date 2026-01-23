@@ -102,7 +102,7 @@ model Project {
   status      ProjectStatus @default(ACTIVE)
   progress    Float         @default(0)
 
-  userId String @db.ObjectId
+  userId String
   user   User   @relation(fields: [userId], references: [id])
 
   documents Document[]
