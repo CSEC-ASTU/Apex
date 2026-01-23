@@ -20,8 +20,8 @@ export const saveInformation = async (state: any) => {
       if (file) {
         await tx.document.create({
           data: {
-            fileName: file.fileName,
-            fileType: file.fileType,
+            fileName: file.originalname,
+            fileType: file.mimetype,
             status: DocumentStatus.PENDING,
             projectId,
           },
