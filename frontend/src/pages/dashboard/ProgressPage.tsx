@@ -21,15 +21,16 @@ export default function ProgressPage() {
 
   const progress = getProgress()
 
-  const todoTasks = tasks.filter((t) => t.status === "todo")
-  const inProgressTasks = tasks.filter((t) => t.status === "in_progress")
-  const completedTasks = tasks.filter((t) => t.status === "completed")
+  // Backend uses uppercase: TODO, IN_PROGRESS, DONE and origin instead of source
+  const todoTasks = tasks.filter((t) => t.status === "TODO")
+  const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS")
+  const completedTasks = tasks.filter((t) => t.status === "DONE")
 
-  const agentTasks = tasks.filter((t) => t.source === "agent")
-  const userTasks = tasks.filter((t) => t.source === "user")
+  const agentTasks = tasks.filter((t) => t.origin === "AGENT")
+  const userTasks = tasks.filter((t) => t.origin === "USER")
 
-  const agentCompleted = agentTasks.filter((t) => t.status === "completed").length
-  const userCompleted = userTasks.filter((t) => t.status === "completed").length
+  const agentCompleted = agentTasks.filter((t) => t.status === "DONE").length
+  const userCompleted = userTasks.filter((t) => t.status === "DONE").length
 
   const progressColor =
     progress.percentage >= 75

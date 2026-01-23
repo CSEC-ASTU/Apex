@@ -39,7 +39,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     try {
       if (USE_MOCK) {
         await new Promise((r) => setTimeout(r, 400))
-        set({ documents: MOCK_DOCUMENTS[projectId] || [], isLoading: false })
+        set({ documents: [], isLoading: false })
         return
       }
       console.log('📄 Fetching documents for project:', projectId)
@@ -130,13 +130,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       if (USE_MOCK) {
         set((state) => ({
           documents: state.documents.map((d) =>
-            d.id === documentId ? { ...d, status: 'processing' as const } : d
+            d.id === documentId ? { ...d, status: 'PENDING' as const } : d
           ),
         }))
         await new Promise((r) => setTimeout(r, 2000))
         set((state) => ({
           documents: state.documents.map((d) =>
-            d.id === documentId ? { ...d, status: 'completed' as const } : d
+            d.id === documentId ? { ...d, status: 'PROCESSED' as const } : d
           ),
         }))
         return

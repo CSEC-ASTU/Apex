@@ -15,7 +15,7 @@ export const chatApi = {
    * Get chat history for a project
    * Note: Backend doesn't have this endpoint yet - returns empty array
    */
-  async getHistory(projectId: string): Promise<ApiResponse<ChatMessage[]>> {
+  async getHistory(_projectId: string): Promise<ApiResponse<ChatMessage[]>> {
     // TODO: Implement when backend adds chat history endpoint
     return { success: true, data: [] }
   },
@@ -34,7 +34,7 @@ export const chatApi = {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: data.message }),
+        body: JSON.stringify({ query: data.content }),
       }
     )
     if (!response.ok) {
@@ -108,7 +108,7 @@ export const chatApi = {
    * Clear chat history for a project
    * Note: Backend doesn't have this endpoint yet
    */
-  async clearHistory(projectId: string): Promise<ApiResponse<void>> {
+  async clearHistory(_projectId: string): Promise<ApiResponse<void>> {
     // TODO: Implement when backend adds clear history endpoint
     return { success: true, data: undefined }
   },

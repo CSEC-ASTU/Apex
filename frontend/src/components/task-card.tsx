@@ -91,9 +91,6 @@ export function TaskCard({ task, onStatusChange, onDelete }: TaskCardProps) {
             <div className="flex items-center justify-between mt-3">
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>Weight: {task.weight}</span>
-                {task.requirementId && (
-                  <span>Linked to requirement</span>
-                )}
               </div>
 
               <DropdownMenu>

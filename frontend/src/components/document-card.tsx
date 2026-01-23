@@ -1,4 +1,4 @@
-import { FileText, Trash2, RotateCcw, Loader2, CheckCircle, AlertCircle, Clock } from "lucide-react"
+import { FileText, Trash2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,10 +14,17 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
   // Debug logging
   console.log('📄 DocumentCard received:', document)
   
-  // Normalize status (backend uses PENDING/PROCESSED/FAILED, frontend expects lowercase)
-  const normalizedStatus = (document.status || 'pending').toLowerCase() as 'pending' | 'processing' | 'completed' | 'failed'
-  // Map PROCESSED to completed
-  const displayStatus = normalizedStatus === 'processed' ? 'completed' : normalizedStatus
+  // Normalize status for display (backend uses PENDING/PROCESSED/FAILED)
+  const getDisplayStatus = () => {
+    const status = (document.status || 'PENDING').toUpperCase()
+    switch (status) {
+      case 'PROCESSED': return 'completed'
+      case 'FAILED': return 'failed'
+      case 'PENDING': return 'pending'
+      default: return 'pending'
+    }
+  }
+  const displayStatus = getDisplayStatus()
   
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + " B"
@@ -35,27 +42,10 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
     })
   }
 
-  const getStatusIcon = () => {
-    switch (displayStatus) {
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "processing":
-        return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
-      case "pending":
-        return <Clock className="h-4 w-4 text-yellow-500" />
-      case "failed":
-        return <AlertCircle className="h-4 w-4 text-red-500" />
-      default:
-        return <Clock className="h-4 w-4 text-gray-500" />
-    }
-  }
-
   const getStatusBadge = () => {
     switch (displayStatus) {
       case "completed":
         return <Badge variant="success">Processed</Badge>
-      case "processing":
-        return <Badge variant="info">Processing</Badge>
       case "pending":
         return <Badge variant="warning">Pending</Badge>
       case "failed":
@@ -112,8 +102,8 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
               <span>•</span>
               <span>{document.createdAt ? formatDate(document.createdAt) : 'N/A'}</span>
             </div>
-            {displayStatus === "failed" && document.errorMessage && (
-              <p className="mt-2 text-sm text-destructive">{document.errorMessage}</p>
+            {displayStatus === "failed" && (document as { errorMessage?: string }).errorMessage && (
+              <p className="mt-2 text-sm text-destructive">{(document as { errorMessage?: string }).errorMessage}</p>
             )}
           </div>
 
