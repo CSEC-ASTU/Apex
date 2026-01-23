@@ -6,13 +6,22 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.get("/:projectId/requirements", ProjectDataController.getRequirements);
-router.get("/:projectId/missing-information", ProjectDataController.getMissingInformation);
-router.get("/:projectId/conflicts", ProjectDataController.getConflicts);
+// Requirements
+router.get("/:projectId/requirements/functional", ProjectDataController.getFunctionalRequirements);
+router.get("/:projectId/requirements/non-functional", ProjectDataController.getNonFunctionalRequirements);
 
+// Missing Information
+router.get("/:projectId/missing-information/addressed", ProjectDataController.getAddressedMissingInformation);
+router.get("/:projectId/missing-information/unaddressed", ProjectDataController.getUnaddressedMissingInformation);
+
+// Conflicts
+router.get("/:projectId/conflicts/resolved", ProjectDataController.getResolvedConflicts);
+router.get("/:projectId/conflicts/unresolved", ProjectDataController.getUnresolvedConflicts);
+
+// Status updates
 router.patch(
   "/:projectId/missing-information/:missingInfoId",
-  ProjectDataController.updateMissingInfoStatus
+  ProjectDataController.updateMissingInformationStatus
 );
 
 router.patch(
