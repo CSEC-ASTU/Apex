@@ -27,3 +27,7 @@ Thumbs.db
 # Prisma
 prisma/*.db
 prisma/*.db-journal
+
+# Uploads (keep folder but ignore actual files)
+uploads/*
+!uploads/.gitkeep
