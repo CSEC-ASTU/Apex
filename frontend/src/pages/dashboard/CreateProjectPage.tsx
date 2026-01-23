@@ -5,25 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldLabel, FieldDescription } from "@/components/ui/field"
+import { useProjectStore } from "@/stores"
 
 export default function CreateProjectPage() {
   const navigate = useNavigate()
+  const { createProject, isCreating, error } = useProjectStore()
+
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setIsSubmitting(true)
 
-    // TODO: Create project via API
-    console.log("Creating project:", { name, description })
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Navigate to projects list (will navigate to project page once API is ready)
-    navigate("/dashboard/projects")
+    const project = await createProject({ name, description })
+    if (project) {
+      // Navigate to the new project's documents page
+      navigate(`/dashboard/projects/${project.id}/documents`)
+    }
   }
 
   return (
@@ -50,6 +48,12 @@ export default function CreateProjectPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+                  {error}
+                </div>
+              )}
+
               <Field>
                 <FieldLabel htmlFor="name">Project Name</FieldLabel>
                 <Input
@@ -79,8 +83,8 @@ export default function CreateProjectPage() {
               </Field>
 
               <div className="flex gap-4">
-                <Button type="submit" disabled={!name || isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create Project"}
+                <Button type="submit" disabled={!name || isCreating}>
+                  {isCreating ? "Creating..." : "Create Project"}
                 </Button>
                 <Button
                   type="button"
