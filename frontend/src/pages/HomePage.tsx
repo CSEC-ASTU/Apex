@@ -10,20 +10,16 @@ export default function HomePage() {
         </p>
         <div className="flex gap-4 justify-center">
           <a
-            href="https://react.dev"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/signin"
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
           >
-            React Docs
+            Sign In
           </a>
           <a
-            href="https://ui.shadcn.com"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/signup"
             className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:opacity-90 transition-opacity"
           >
-            Shadcn/ui
+            Sign Up
           </a>
         </div>
       </div>
