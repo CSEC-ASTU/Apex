@@ -42,7 +42,7 @@ ${parts.join("\n\n")}
 
     } catch (err) {
         emit?.("error", {
-            message: "Failed to generate final response",err
+            message: "Failed to generate final response", err
         });
 
         return {

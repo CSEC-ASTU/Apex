@@ -4,6 +4,7 @@ import { vectorAgent } from "../../agents/graphs/vectorGraph";
 import { dataService } from "./data.service";
 import { textInformationAgent } from "../../agents/graphs/textInfoGraph";
 import { textVectorAgent } from "../../agents/graphs/textVectorGraph";
+import { prisma } from "../../config/database";
 
 export const dataController = {
     async addTextData(req: Request, res: Response) {
@@ -68,43 +69,95 @@ export const dataController = {
 
     async uploadFile(req: Request, res: Response) {
         try {
+            console.log("📤 POST /project/:projectId/upload - File upload request");
+            
             const file = req.file;
             const userId = req.user!.id;
             const rawProjectId = req.params.projectId;
             const projectId = Array.isArray(rawProjectId)
                 ? rawProjectId[0]
                 : rawProjectId;
+            
+            console.log("   User:", userId);
+            console.log("   Project:", projectId);
+            console.log("   File:", file ? { name: file.originalname, size: file.size, mimetype: file.mimetype } : "NO FILE");
+            
             if (!file) {
+                console.log("   ❌ No file uploaded");
                 return res.status(400).json({
                     success: false,
                     error: "No file uploaded."
                 });
             }
 
+            // Extract file extension for fileType
+            const fileExtension = file.originalname.split('.').pop()?.toLowerCase() || 'unknown';
+
+            // 1. Create Document record in database with PENDING status
+            console.log("   💾 Creating document record...");
+            const document = await prisma.document.create({
+                data: {
+                    fileName: file.originalname,
+                    fileType: fileExtension,
+                    status: "PENDING",
+                    projectId: projectId,
+                }
+            });
+            console.log("   💾 Document created:", document.id);
+
+            console.log("   ⏳ Processing file with AI agents...");
+            
             const [infoResult, vectorResult] = await Promise.all([
                 informationAgent.invoke({ file, userId, projectId }),
                 vectorAgent.invoke({ file, projectId })
             ]);
 
+            console.log("   📊 Info agent result:", infoResult.success ? "✅ Success" : "❌ Failed");
+            console.log("   📊 Vector agent result:", vectorResult.success ? "✅ Success" : "❌ Failed");
+
+            // 2. Update document status based on processing result
             if (!infoResult.success) {
+                console.log("   ❌ Info agent error:", infoResult.error);
+                
+                // Update document status to FAILED
+                await prisma.document.update({
+                    where: { id: document.id },
+                    data: { status: "FAILED" }
+                });
+                
                 return res.status(422).json({
                     success: false,
-                    error: infoResult.error
+                    error: infoResult.error,
+                    document: { ...document, status: "FAILED" }
                 });
             }
 
             // Vector graph failure should NOT block summary
             if (!vectorResult.success) {
-                console.warn("Vector pipeline failed:", vectorResult.error);
+                console.warn("   ⚠️ Vector pipeline failed:", vectorResult.error);
             }
 
-            return res.status(200).json({
-                success: true,
-                data: infoResult.fileSummary,
-                vectorized: vectorResult.success
+            // 3. Update document status to PROCESSED
+            const updatedDocument = await prisma.document.update({
+                where: { id: document.id },
+                data: { status: "PROCESSED" }
             });
 
-        } catch (error) {
+            console.log("   ✅ File processed successfully");
+            
+            // 4. Return both document and analysis data
+            return res.status(200).json({
+                success: true,
+                data: {
+                    document: updatedDocument,
+                    analysis: infoResult.fileSummary,
+                    vectorized: vectorResult.success
+                }
+            });
+
+        } catch (error: any) {
+            console.error("   ❌ Upload error:", error.message);
+            console.error("   Stack:", error.stack);
             return res.status(500).json({
                 success: false,
                 error: "Internal server error."

@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { MessageSquare, Send, Bot, User, FileText, Trash2 } from "lucide-react"
 import { useChatStore, useProjectStore } from "@/stores"
+import { TypewriterText } from "@/components/typewriter-text"
 
 export default function ChatPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -16,13 +17,30 @@ export default function ChatPage() {
     messages,
     isLoading,
     isSending,
+    streamingContent,
+    progressMessage,
+    error,
     fetchHistory,
     sendMessage,
     clearHistory,
+    clearError,
   } = useChatStore()
 
   const [input, setInput] = useState("")
+  const [animatingMessageId, setAnimatingMessageId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const prevMessagesLengthRef = useRef(0)
+
+  // Track when a new assistant message is added to animate it
+  useEffect(() => {
+    if (messages.length > prevMessagesLengthRef.current) {
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage?.role === "assistant") {
+        setAnimatingMessageId(lastMessage.id)
+      }
+    }
+    prevMessagesLengthRef.current = messages.length
+  }, [messages])
 
   useEffect(() => {
     if (projectId) {
@@ -32,9 +50,9 @@ export default function ChatPage() {
   }, [projectId, fetchProject, fetchHistory])
 
   useEffect(() => {
-    // Scroll to bottom when new messages arrive
+    // Scroll to bottom when new messages arrive or streaming content updates
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, streamingContent, progressMessage, animatingMessageId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,7 +73,7 @@ export default function ChatPage() {
     <DashboardLayout
       breadcrumbs={[
         { label: "Projects", href: "/dashboard/projects" },
-        { label: currentProject?.name || "Project", href: `/dashboard/projects/${projectId}/documents` },
+        { label: currentProject?.title || "Project", href: `/dashboard/projects/${projectId}/documents` },
         { label: "Q&A Chat" },
       ]}
     >
@@ -103,7 +121,7 @@ export default function ChatPage() {
                   </div>
                   <h3 className="mt-4 text-lg font-semibold">Start a conversation</h3>
                   <p className="mt-2 text-sm text-muted-foreground max-w-sm">
-                    Ask questions about your project requirements, and I'll 
+                    Ask questions about your project requirements, and I'll
                     find answers from your uploaded documents.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2 justify-center">
@@ -135,9 +153,8 @@ export default function ChatPage() {
                   {messages.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex gap-3 ${
-                        message.role === "user" ? "justify-end" : "justify-start"
-                      }`}
+                      className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"
+                        }`}
                     >
                       {message.role === "assistant" && (
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
@@ -145,16 +162,25 @@ export default function ChatPage() {
                         </div>
                       )}
                       <div
-                        className={`rounded-lg px-4 py-3 max-w-[80%] ${
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        }`}
+                        className={`rounded-lg px-4 py-3 max-w-[60%] ${message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                          }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                        
+                        <p className="text-sm whitespace-pre-wrap">
+                          {message.role === "assistant" && animatingMessageId === message.id ? (
+                            <TypewriterText
+                              text={message.content}
+                              speed={50}
+                              onComplete={() => setAnimatingMessageId(null)}
+                            />
+                          ) : (
+                            message.content
+                          )}
+                        </p>
+
                         {/* Sources */}
-                        {message.sources && message.sources.length > 0 && (
+                        {message.sources && message.sources.length > 0 && animatingMessageId !== message.id && (
                           <div className="mt-3 pt-3 border-t border-border/50">
                             <p className="text-xs font-medium mb-2 opacity-70">Sources:</p>
                             <div className="space-y-1">
@@ -181,23 +207,54 @@ export default function ChatPage() {
                       )}
                     </div>
                   ))}
-                  
-                  {/* Typing indicator */}
+
+                  {/* Streaming content or typing indicator */}
                   {isSending && (
                     <div className="flex gap-3">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                         <Bot className="h-4 w-4" />
                       </div>
-                      <div className="rounded-lg px-4 py-3 bg-muted">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" />
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0.1s]" />
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0.2s]" />
-                        </div>
+                      <div className="rounded-lg px-4 py-3 bg-muted max-w-[50%]">
+                        {streamingContent ? (
+                          <p className="text-sm whitespace-pre-wrap">{streamingContent}</p>
+                        ) : progressMessage ? (
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              <span className="w-2 h-2 bg-primary/50 rounded-full animate-pulse" />
+                            </div>
+                            <span className="text-sm text-muted-foreground">{progressMessage}</span>
+                          </div>
+                        ) : (
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" />
+                            <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0.1s]" />
+                            <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0.2s]" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
-                  
+
+                  {/* Error message */}
+                  {error && !isSending && (
+                    <div className="flex gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground">
+                        <Bot className="h-4 w-4" />
+                      </div>
+                      <div className="rounded-lg px-4 py-3 bg-destructive/10 border border-destructive/20 max-w-[60%]">
+                        <p className="text-sm text-destructive">{error}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 h-7 text-xs"
+                          onClick={clearError}
+                        >
+                          Dismiss
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   <div ref={messagesEndRef} />
                 </>
               )}
