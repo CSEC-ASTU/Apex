@@ -14,8 +14,9 @@ router.get('/', (_req, res) => {
   })
 })
 
-// Add your route imports here
-// import userRoutes from './user.routes.js'
-// router.use('/users', userRoutes)
+router.use("/auth",authRoute)
+router.use("/projects",authMiddleware,projectRoute)
+router.use("/project",authMiddleware,fileRoute)
+router.use("/assistant",assistant)
 
 export default router
