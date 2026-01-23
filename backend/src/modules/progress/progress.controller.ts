@@ -4,7 +4,7 @@ import { progressService } from "./progress.service";
 export const progressController = {
   async getProgress(req: Request, res: Response) {
     try {
-      const { projectId } = req.params;
+      const { projectId } = req.params as { projectId: string };
 
       if (!projectId) {
         return res.status(400).json({
