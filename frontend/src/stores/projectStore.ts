@@ -9,8 +9,9 @@ import { projectsApi } from '@/services/projects'
 const MOCK_PROJECTS: Project[] = [
   {
     id: '1',
-    name: 'E-Commerce Platform',
+    title: 'E-Commerce Platform',
     description: 'Full-stack e-commerce solution with payment integration',
+    status: 'ACTIVE',
     userId: 'user-1',
     progress: 45,
     documentCount: 3,
@@ -20,8 +21,9 @@ const MOCK_PROJECTS: Project[] = [
   },
   {
     id: '2',
-    name: 'Task Management App',
+    title: 'Task Management App',
     description: 'Collaborative task management with real-time updates',
+    status: 'ACTIVE',
     userId: 'user-1',
     progress: 72,
     documentCount: 2,
@@ -41,7 +43,7 @@ const MOCK_STATS: DashboardStats = {
 }
 
 // Set to true to use mock data (for development)
-const USE_MOCK = true
+const USE_MOCK = false
 
 // ============================================
 // Store Interface
@@ -122,6 +124,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   // Fetch dashboard stats
+  // Note: Backend doesn't have /dashboard/stats endpoint yet, so we compute from projects
   fetchStats: async () => {
     set({ isLoading: true, error: null })
     try {
@@ -130,8 +133,20 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         set({ stats: MOCK_STATS, isLoading: false })
         return
       }
-      const response = await projectsApi.getDashboardStats()
-      set({ stats: response.data, isLoading: false })
+      // Fetch projects and compute stats from them
+      const response = await projectsApi.getAll()
+      const projects = response.data || []
+      const stats: DashboardStats = {
+        totalProjects: projects.length,
+        totalDocuments: projects.reduce((acc, p) => acc + (p.documentCount || 0), 0),
+        totalTasks: projects.reduce((acc, p) => acc + (p.taskCount || 0), 0),
+        completedTasks: 0, // Will be computed when tasks endpoint is available
+        averageProgress: projects.length > 0 
+          ? projects.reduce((acc, p) => acc + (p.progress || 0), 0) / projects.length 
+          : 0,
+        recentProjects: projects.slice(0, 5),
+      }
+      set({ stats, projects, isLoading: false })
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
     }
@@ -146,6 +161,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         const newProject: Project = {
           id: Date.now().toString(),
           ...data,
+          status: 'ACTIVE',
           userId: 'user-1',
           progress: 0,
           documentCount: 0,

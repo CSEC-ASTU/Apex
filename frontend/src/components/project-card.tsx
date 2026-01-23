@@ -29,7 +29,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <Card className="hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <CardTitle className="text-lg line-clamp-1">{project.name}</CardTitle>
+            <CardTitle className="text-lg line-clamp-1">{project.title}</CardTitle>
             <Badge variant={project.progress === 100 ? "success" : "secondary"}>
               {project.progress}%
             </Badge>

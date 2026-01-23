@@ -11,6 +11,14 @@ interface DocumentCardProps {
 }
 
 export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardProps) {
+  // Debug logging
+  console.log('📄 DocumentCard received:', document)
+  
+  // Normalize status (backend uses PENDING/PROCESSED/FAILED, frontend expects lowercase)
+  const normalizedStatus = (document.status || 'pending').toLowerCase() as 'pending' | 'processing' | 'completed' | 'failed'
+  // Map PROCESSED to completed
+  const displayStatus = normalizedStatus === 'processed' ? 'completed' : normalizedStatus
+  
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + " B"
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB"
@@ -28,7 +36,7 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
   }
 
   const getStatusIcon = () => {
-    switch (document.status) {
+    switch (displayStatus) {
       case "completed":
         return <CheckCircle className="h-4 w-4 text-green-500" />
       case "processing":
@@ -37,11 +45,13 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
         return <Clock className="h-4 w-4 text-yellow-500" />
       case "failed":
         return <AlertCircle className="h-4 w-4 text-red-500" />
+      default:
+        return <Clock className="h-4 w-4 text-gray-500" />
     }
   }
 
   const getStatusBadge = () => {
-    switch (document.status) {
+    switch (displayStatus) {
       case "completed":
         return <Badge variant="success">Processed</Badge>
       case "processing":
@@ -50,6 +60,8 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
         return <Badge variant="warning">Pending</Badge>
       case "failed":
         return <Badge variant="destructive">Failed</Badge>
+      default:
+        return <Badge variant="secondary">{displayStatus}</Badge>
     }
   }
 
@@ -81,20 +93,20 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
               {getStatusBadge()}
             </div>
             <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-              <span>{formatFileSize(document.fileSize)}</span>
+              <span>{formatFileSize(document.fileSize || 0)}</span>
               <span>•</span>
-              <span>{document.fileType.toUpperCase()}</span>
+              <span>{(document.fileType || 'unknown').toUpperCase()}</span>
               <span>•</span>
-              <span>{formatDate(document.createdAt)}</span>
+              <span>{document.createdAt ? formatDate(document.createdAt) : 'N/A'}</span>
             </div>
-            {document.status === "failed" && document.errorMessage && (
+            {displayStatus === "failed" && document.errorMessage && (
               <p className="mt-2 text-sm text-destructive">{document.errorMessage}</p>
             )}
           </div>
 
           {/* Actions */}
           <div className="flex items-center gap-1">
-            {document.status === "failed" && onReprocess && (
+            {displayStatus === "failed" && onReprocess && (
               <Button
                 variant="ghost"
                 size="icon"

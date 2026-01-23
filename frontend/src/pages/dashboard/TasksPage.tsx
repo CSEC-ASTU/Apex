@@ -71,7 +71,7 @@ export default function TasksPage() {
     <DashboardLayout
       breadcrumbs={[
         { label: "Projects", href: "/dashboard/projects" },
-        { label: currentProject?.name || "Project", href: `/dashboard/projects/${projectId}/documents` },
+        { label: currentProject?.title || "Project", href: `/dashboard/projects/${projectId}/documents` },
         { label: "Tasks" },
       ]}
     >

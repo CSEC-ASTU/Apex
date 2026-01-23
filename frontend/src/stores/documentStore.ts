@@ -53,7 +53,7 @@ const MOCK_DOCUMENTS: Record<string, Document[]> = {
   ],
 }
 
-const USE_MOCK = true
+const USE_MOCK = false
 
 // ============================================
 // Store Interface
@@ -92,9 +92,16 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         set({ documents: MOCK_DOCUMENTS[projectId] || [], isLoading: false })
         return
       }
+      console.log('📄 Fetching documents for project:', projectId)
       const response = await documentsApi.getAll(projectId)
-      set({ documents: response.data, isLoading: false })
+      console.log('📄 Raw API response:', response)
+      console.log('📄 Documents data:', response.data)
+      if (response.data && response.data.length > 0) {
+        console.log('📄 First document structure:', JSON.stringify(response.data[0], null, 2))
+      }
+      set({ documents: response.data || [], isLoading: false })
     } catch (error) {
+      console.error('📄 Error fetching documents:', error)
       set({ error: (error as Error).message, isLoading: false })
     }
   },

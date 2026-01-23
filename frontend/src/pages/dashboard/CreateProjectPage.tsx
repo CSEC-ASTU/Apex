@@ -11,13 +11,13 @@ export default function CreateProjectPage() {
   const navigate = useNavigate()
   const { createProject, isCreating, error } = useProjectStore()
 
-  const [name, setName] = useState("")
+  const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    const project = await createProject({ name, description })
+    const project = await createProject({ title, description })
     if (project) {
       // Navigate to the new project's documents page
       navigate(`/dashboard/projects/${project.id}/documents`)
@@ -55,12 +55,12 @@ export default function CreateProjectPage() {
               )}
 
               <Field>
-                <FieldLabel htmlFor="name">Project Name</FieldLabel>
+                <FieldLabel htmlFor="title">Project Name</FieldLabel>
                 <Input
-                  id="name"
+                  id="title"
                   placeholder="My Awesome Project"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                   required
                 />
                 <FieldDescription>
@@ -83,7 +83,7 @@ export default function CreateProjectPage() {
               </Field>
 
               <div className="flex gap-4">
-                <Button type="submit" disabled={!name || isCreating}>
+                <Button type="submit" disabled={!title || isCreating}>
                   {isCreating ? "Creating..." : "Create Project"}
                 </Button>
                 <Button
