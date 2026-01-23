@@ -33,3 +33,4 @@ uploads/*
 !uploads/.gitkeep
 .dist
 src/generated
+/generated/prisma
