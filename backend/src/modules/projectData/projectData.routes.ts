@@ -19,12 +19,12 @@ router.get("/:projectId/conflicts/resolved", ProjectDataController.getResolvedCo
 router.get("/:projectId/conflicts/unresolved", ProjectDataController.getUnresolvedConflicts);
 
 // Status updates
-router.patch(
+router.put(
   "/:projectId/missing-information/:missingInfoId",
   ProjectDataController.updateMissingInformationStatus
 );
 
-router.patch(
+router.put(
   "/:projectId/conflicts/:conflictId",
   ProjectDataController.updateConflictStatus
 );
