@@ -19,7 +19,7 @@ export const embedGeneratedQuery = async (state: any) => {
       };
     }
 
-    const response = await genAI.models.embedContent({
+    const response = await genAI!.models.embedContent({
       model: "gemini-embedding-001",
       contents: [state.generated_query || state.query],
       config: { taskType: "RETRIEVAL_QUERY" }
