@@ -1,5 +1,5 @@
-import { prisma } from "../../config/prisma";
-import { TaskOrigin } from "../../generated/prisma/enums";
+import { prisma } from "../../config/database";
+import { TaskOrigin } from "../../generated/prisma";
 
 export const getProjectData = async (state: any) => {
   const { projectId, models, origin, resolved, emit } = state;

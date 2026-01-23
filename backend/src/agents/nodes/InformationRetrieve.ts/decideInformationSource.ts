@@ -59,9 +59,14 @@ export const findInformationSource = async (state: any) => {
     if (call.name === "answerQueryFromRAG") {
       emit?.("progress", { stage: "rag", message: "Searching project documents" });
 
+      const generated_query =
+        call.args && typeof (call.args as any).generated_query === "string"
+          ? (call.args as any).generated_query
+          : undefined;
+
       const result = await subAssistantRAG_Agent.invoke({
         query,
-        generated_query: call.args?.generated_query,
+        generated_query,
         projectId,
         emit
       });

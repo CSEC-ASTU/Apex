@@ -8,8 +8,11 @@ import { textVectorAgent } from "../../agents/graphs/textVectorGraph";
 export const dataController = {
     async addTextData(req: Request, res: Response) {
         const { text } = req.body;
-        const { projectId } = req.params;
-        const userId = (req as any).user?.userId;
+        const rawProjectId = req.params.projectId;
+        const projectId = Array.isArray(rawProjectId)
+            ? rawProjectId[0]
+            : rawProjectId;
+        const userId = req.user!.id;
 
         if (!text) {
             return res.status(400).json({
@@ -66,9 +69,11 @@ export const dataController = {
     async uploadFile(req: Request, res: Response) {
         try {
             const file = req.file;
-            const userId = (req as any).user?.userId;
-            const { projectId } = req.params;
-
+            const userId = req.user!.id;
+            const rawProjectId = req.params.projectId;
+            const projectId = Array.isArray(rawProjectId)
+                ? rawProjectId[0]
+                : rawProjectId;
             if (!file) {
                 return res.status(400).json({
                     success: false,
@@ -127,7 +132,7 @@ export const dataController = {
 
         const result = await dataService.addMissingData(
             text,
-            projectId,
+            projectId as string,
             missingdataId
         );
 

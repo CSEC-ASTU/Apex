@@ -31,3 +31,5 @@ prisma/*.db-journal
 # Uploads (keep folder but ignore actual files)
 uploads/*
 !uploads/.gitkeep
+.dist
+./src/generated
