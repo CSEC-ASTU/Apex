@@ -13,7 +13,8 @@ interface ChatState {
   messages: ChatMessage[]
   isLoading: boolean
   isSending: boolean
-  streamingContent: string // For SSE streaming
+  streamingContent: string // For SSE streaming - shows final response as it builds
+  progressMessage: string // Shows current progress stage
   error: string | null
   
   fetchHistory: (projectId: string) => Promise<void>
@@ -26,11 +27,40 @@ interface ChatState {
 // Store Implementation
 // ============================================
 
+// Helper to parse SSE events from a chunk of text
+function parseSSEEvents(text: string): Array<{ event: string; data: string }> {
+  const events: Array<{ event: string; data: string }> = []
+  const lines = text.split('\n')
+  
+  let currentEvent = ''
+  let currentData = ''
+  
+  for (const line of lines) {
+    if (line.startsWith('event: ')) {
+      currentEvent = line.slice(7).trim()
+    } else if (line.startsWith('data: ')) {
+      currentData = line.slice(6)
+    } else if (line === '' && currentEvent && currentData) {
+      events.push({ event: currentEvent, data: currentData })
+      currentEvent = ''
+      currentData = ''
+    }
+  }
+  
+  // Handle case where last event doesn't have trailing newline
+  if (currentEvent && currentData) {
+    events.push({ event: currentEvent, data: currentData })
+  }
+  
+  return events
+}
+
 export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   isLoading: false,
   isSending: false,
   streamingContent: '',
+  progressMessage: '',
   error: null,
 
   fetchHistory: async (_projectId: string) => {
@@ -62,6 +92,7 @@ export const useChatStore = create<ChatState>((set) => ({
       messages: [...state.messages, userMessage],
       isSending: true,
       streamingContent: '',
+      progressMessage: '',
       error: null,
     }))
 
@@ -113,47 +144,123 @@ export const useChatStore = create<ChatState>((set) => ({
         }
 
         const decoder = new TextDecoder()
-        let fullContent = ''
+        let buffer = ''
+        let finalResponse = ''
+        let hasError = false
+        let errorMessage = ''
 
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
 
           const chunk = decoder.decode(value, { stream: true })
-          fullContent += chunk
+          buffer += chunk
           
-          // Update streaming content for real-time display
-          set({ streamingContent: fullContent })
+          // Parse SSE events from the buffer
+          const events = parseSSEEvents(buffer)
+          
+          for (const evt of events) {
+            console.log('💬 SSE Event:', evt.event, evt.data)
+            
+            try {
+              const data = JSON.parse(evt.data)
+              
+              switch (evt.event) {
+                case 'progress':
+                  // Update progress message
+                  set({ progressMessage: data.message || data.stage || 'Processing...' })
+                  break
+                  
+                case 'error':
+                  // Handle error event
+                  hasError = true
+                  errorMessage = data.message || 'An error occurred'
+                  console.error('💬 SSE Error:', errorMessage)
+                  break
+                  
+                case 'final':
+                  // Extract the actual response
+                  if (data.success && data.response) {
+                    finalResponse = data.response
+                    set({ streamingContent: finalResponse })
+                  } else if (data.response) {
+                    finalResponse = data.response
+                    set({ streamingContent: finalResponse })
+                  }
+                  break
+                  
+                default:
+                  console.log('💬 Unknown SSE event:', evt.event)
+              }
+            } catch (parseError) {
+              console.warn('💬 Failed to parse SSE data:', evt.data)
+            }
+          }
+          
+          // Clear processed events from buffer
+          buffer = ''
         }
 
-        // Add final AI message
-        const aiMessage: ChatMessage = {
-          id: `msg-${Date.now() + 1}`,
-          projectId,
-          role: 'assistant',
-          content: fullContent,
-          createdAt: new Date().toISOString(),
+        // If we got an error but also a final response, still show the response
+        if (finalResponse) {
+          const aiMessage: ChatMessage = {
+            id: `msg-${Date.now() + 1}`,
+            projectId,
+            role: 'assistant',
+            content: finalResponse,
+            createdAt: new Date().toISOString(),
+          }
+          set((state) => ({
+            messages: [...state.messages, aiMessage],
+            isSending: false,
+            streamingContent: '',
+            progressMessage: '',
+            error: hasError ? errorMessage : null,
+          }))
+        } else if (hasError) {
+          // Only error, no response
+          set({ 
+            error: errorMessage, 
+            isSending: false,
+            progressMessage: '',
+          })
+        } else {
+          // No response and no error - something went wrong
+          set({ 
+            error: 'No response received from assistant', 
+            isSending: false,
+            progressMessage: '',
+          })
         }
-        set((state) => ({
-          messages: [...state.messages, aiMessage],
-          isSending: false,
-          streamingContent: '',
-        }))
       } else {
         // Handle regular JSON response
         const data = await response.text()
         console.log('💬 Assistant response:', data)
         
+        // Try to parse as JSON
+        let responseContent = data
+        try {
+          const parsed = JSON.parse(data)
+          if (parsed.response) {
+            responseContent = parsed.response
+          } else if (parsed.data?.response) {
+            responseContent = parsed.data.response
+          }
+        } catch {
+          // Use raw text if not JSON
+        }
+        
         const aiMessage: ChatMessage = {
           id: `msg-${Date.now() + 1}`,
           projectId,
           role: 'assistant',
-          content: data,
+          content: responseContent,
           createdAt: new Date().toISOString(),
         }
         set((state) => ({
           messages: [...state.messages, aiMessage],
           isSending: false,
+          progressMessage: '',
         }))
       }
     } catch (error) {
