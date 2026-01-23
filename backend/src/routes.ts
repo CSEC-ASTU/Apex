@@ -11,5 +11,6 @@ export const router = Router();
 router.use("/projects", projectRoute)
 router.use("/project", fileRoute)
 router.use("/assistant", assistant)
+router.use("/project", projectDataRoute)
 
 export default router
