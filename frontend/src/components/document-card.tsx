@@ -65,12 +65,25 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
     }
   }
 
+  // Get file extension from MIME type or filename
+  const getFileExtension = (): string => {
+    const fileType = document.fileType || ''
+    if (fileType.includes('pdf')) return 'pdf'
+    if (fileType.includes('word') || fileType.includes('docx')) return 'docx'
+    if (fileType.includes('text') || fileType.includes('txt')) return 'txt'
+    // Try to get from filename
+    const ext = document.fileName?.split('.').pop()?.toLowerCase()
+    return ext || 'unknown'
+  }
+
   const getFileIcon = () => {
     const iconClass = "h-10 w-10"
-    switch (document.fileType) {
+    const ext = getFileExtension()
+    switch (ext) {
       case "pdf":
         return <FileText className={`${iconClass} text-red-500`} />
       case "docx":
+      case "doc":
         return <FileText className={`${iconClass} text-blue-500`} />
       case "txt":
         return <FileText className={`${iconClass} text-gray-500`} />
@@ -95,7 +108,7 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
             <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
               <span>{formatFileSize(document.fileSize || 0)}</span>
               <span>•</span>
-              <span>{(document.fileType || 'unknown').toUpperCase()}</span>
+              <span>{getFileExtension().toUpperCase()}</span>
               <span>•</span>
               <span>{document.createdAt ? formatDate(document.createdAt) : 'N/A'}</span>
             </div>

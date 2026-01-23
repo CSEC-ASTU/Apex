@@ -18,26 +18,28 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onStatusChange, onDelete }: TaskCardProps) {
-  const isCompleted = task.status === "completed"
+  // Backend uses DONE, frontend checks for DONE
+  const isCompleted = task.status === "DONE"
 
   const handleCheckChange = (checked: boolean) => {
-    onStatusChange(task.id, checked ? "completed" : "todo")
+    onStatusChange(task.id, checked ? "DONE" : "TODO")
   }
 
   const getStatusBadge = () => {
     switch (task.status) {
-      case "completed":
+      case "DONE":
         return <Badge variant="success">Completed</Badge>
-      case "in_progress":
+      case "IN_PROGRESS":
         return <Badge variant="warning">In Progress</Badge>
-      case "todo":
+      case "TODO":
       default:
         return <Badge variant="secondary">To Do</Badge>
     }
   }
 
   const getSourceBadge = () => {
-    if (task.source === "agent") {
+    // Backend uses AGENT/USER (uppercase)
+    if (task.origin === "AGENT") {
       return (
         <Badge variant="info" className="gap-1">
           <Sparkles className="h-3 w-3" />
@@ -101,13 +103,13 @@ export function TaskCard({ task, onStatusChange, onDelete }: TaskCardProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onStatusChange(task.id, "todo")}>
+                  <DropdownMenuItem onClick={() => onStatusChange(task.id, "TODO")}>
                     Mark as To Do
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onStatusChange(task.id, "in_progress")}>
+                  <DropdownMenuItem onClick={() => onStatusChange(task.id, "IN_PROGRESS")}>
                     Mark as In Progress
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onStatusChange(task.id, "completed")}>
+                  <DropdownMenuItem onClick={() => onStatusChange(task.id, "DONE")}>
                     Mark as Completed
                   </DropdownMenuItem>
                   <DropdownMenuItem
