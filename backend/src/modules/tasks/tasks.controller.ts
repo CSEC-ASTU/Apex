@@ -37,13 +37,29 @@ export const TasksController = {
   async list(req: Request, res: Response) {
     try {
       const { projectId } = req.params;
-      const { origin } = req.query;
+      const { origin: rawOrigin } = req.query;
 
-      const tasks = await TasksService.getTasks(
-        projectId,
-        origin as "USER" | "AGENT" | undefined
-      );
+      let origin: "USER" | "AGENT" | undefined;
 
+      if (Array.isArray(rawOrigin)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid origin parameter"
+        });
+      }
+
+      if (rawOrigin === undefined) {
+        origin = undefined;
+      } else if (rawOrigin === "USER" || rawOrigin === "AGENT") {
+        origin = rawOrigin;
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid origin parameter"
+        });
+      }
+
+      const tasks = await TasksService.getTasks(projectId, origin);
       res.json({ success: true, data: tasks });
     } catch (error: any) {
       res.json({ success: false, error: error.message });
