@@ -3,6 +3,7 @@ import { Router } from "express";
 import projectRoute from "./modules/projects/projects.routes"
 import fileRoute from "./modules/data/data.routes"
 import assistant from "./modules/assistant/assistant.routes"
+import projectDataRoute from "./modules/projectData/projectData.routes"
 
 export const router = Router();
 
