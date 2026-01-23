@@ -1,9 +1,24 @@
-import app from './app.js'
-import { config } from './config/index.js'
+import express, { Request,Response } from "express";
+import cors from "cors"
+import routes from "./routes"
+import cookieParser from "cookie-parser";
+import { errorHandler } from "./middlewares/error-handler";
+import { env } from "./env";
 
-const PORT = config.port
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`)
-  console.log(`📝 Environment: ${config.nodeEnv}`)
+const PORT = env.PORT || 5000
+const app = express()
+app.use(cors())
+app.use(express.json())
+app.use(cookieParser());
+app.use(errorHandler);
+
+app.get("/",(req:Request,res:Response) => {
+    res.send("HELLO from Backend!")
+})
+
+app.use("/api",routes)
+
+app.listen(PORT,()=>{
+    console.log(`🚀 server is running on: http://localhost:${PORT}`)
 })
