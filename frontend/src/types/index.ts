@@ -28,24 +28,26 @@ export interface ApiError {
 
 export interface Project {
   id: string
-  name: string
+  title: string
   description?: string
+  status: 'ACTIVE' | 'COMPLETED'
   userId: string
   progress: number // 0-100 percentage
-  documentCount: number
-  taskCount: number
+  documentCount?: number
+  taskCount?: number
   createdAt: string
   updatedAt: string
 }
 
 export interface CreateProjectInput {
-  name: string
+  title: string
   description?: string
 }
 
 export interface UpdateProjectInput {
-  name?: string
+  title?: string
   description?: string
+  status?: 'ACTIVE' | 'COMPLETED'
 }
 
 // ============================================

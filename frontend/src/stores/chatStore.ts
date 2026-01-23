@@ -14,7 +14,7 @@ const MOCK_RESPONSES: Record<string, string> = {
   performance: "The non-functional requirements state that page load time should be under 3 seconds, and API response time should be under 500ms for the 95th percentile.",
 }
 
-const USE_MOCK = true
+const USE_MOCK = false
 
 // ============================================
 // Store Interface
