@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./config/database.js";
 
 export const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, {
     provider: "mongodb",
   }),
@@ -10,4 +11,12 @@ export const auth = betterAuth({
     enabled: true,
   },
   trustedOrigins: ["http://localhost:5173"],
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // 1 day (refresh session daily)
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60, // 5 minutes - reduces DB calls
+    },
+  },
 });
