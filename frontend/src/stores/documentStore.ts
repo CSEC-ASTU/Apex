@@ -2,57 +2,7 @@ import { create } from 'zustand'
 import type { Document } from '@/types'
 import { documentsApi } from '@/services/documents'
 
-// ============================================
-// Mock Data
-// ============================================
-
-const MOCK_DOCUMENTS: Record<string, Document[]> = {
-  '1': [
-    {
-      id: 'doc-1',
-      projectId: '1',
-      fileName: 'requirements.pdf',
-      fileType: 'pdf',
-      fileSize: 2458000,
-      status: 'completed',
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'doc-2',
-      projectId: '1',
-      fileName: 'technical-spec.docx',
-      fileType: 'docx',
-      fileSize: 1850000,
-      status: 'completed',
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'doc-3',
-      projectId: '1',
-      fileName: 'api-design.txt',
-      fileType: 'txt',
-      fileSize: 45000,
-      status: 'processing',
-      createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    },
-  ],
-  '2': [
-    {
-      id: 'doc-4',
-      projectId: '2',
-      fileName: 'prd.pdf',
-      fileType: 'pdf',
-      fileSize: 3200000,
-      status: 'completed',
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ],
-}
-
+// USE_MOCK = false means we use real backend
 const USE_MOCK = false
 
 // ============================================
@@ -119,11 +69,10 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           id: `doc-${Date.now()}`,
           projectId,
           fileName: file.name,
-          fileType: file.name.split('.').pop() as 'pdf' | 'docx' | 'txt',
-          fileSize: file.size,
-          status: 'processing',
+          fileType: file.type || 'unknown',
+          status: 'PENDING',
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          fileSize: file.size,
         }
         set((state) => ({
           documents: [...state.documents, newDoc],
@@ -135,7 +84,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         setTimeout(() => {
           set((state) => ({
             documents: state.documents.map((d) =>
-              d.id === newDoc.id ? { ...d, status: 'completed' as const } : d
+              d.id === newDoc.id ? { ...d, status: 'PROCESSED' as const } : d
             ),
           }))
         }, 3000)
