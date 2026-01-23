@@ -15,7 +15,8 @@ export const assistantController = {
     const rawProjectId = req.params.projectId;
     const projectId = Array.isArray(rawProjectId)
       ? rawProjectId[0]
-      : rawProjectId; const userId = (req as any).user?.userId;
+      : rawProjectId;
+    const userId = req.user!.id;
 
     if (!query) {
       emit("error", { message: "Query is required." });

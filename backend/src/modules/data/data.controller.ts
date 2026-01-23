@@ -11,7 +11,8 @@ export const dataController = {
         const rawProjectId = req.params.projectId;
         const projectId = Array.isArray(rawProjectId)
             ? rawProjectId[0]
-            : rawProjectId; const userId = (req as any).user?.userId;
+            : rawProjectId;
+        const userId = req.user!.id;
 
         if (!text) {
             return res.status(400).json({
@@ -68,7 +69,7 @@ export const dataController = {
     async uploadFile(req: Request, res: Response) {
         try {
             const file = req.file;
-            const userId = (req as any).user?.userId;
+            const userId = req.user!.id;
             const rawProjectId = req.params.projectId;
             const projectId = Array.isArray(rawProjectId)
                 ? rawProjectId[0]

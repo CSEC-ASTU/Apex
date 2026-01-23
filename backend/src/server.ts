@@ -1,24 +1,35 @@
 import express, { Request, Response } from "express";
-import cors from "cors"
-import routes from "./routes"
-import cookieParser from "cookie-parser";
+import cors from "cors";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./auth";
 import { env } from "./env";
-//import { errorHandler } from "./middlewares/error-handler";
+import routes from "./routes";
+
+const PORT = env.PORT || 5000;
+const app = express();
+
+// CORS with credentials (required for Better Auth cookies)
+app.use(cors({
+  origin: env.CORS_ORIGIN,
+  credentials: true,
+}));
 
 
-const PORT = env.PORT || 5000
-const app = express()
-app.use(cors())
-app.use(express.json())
-app.use(cookieParser());
-//app.use(errorHandler);
+// Better Auth handler - MUST be before express.json()
+app.all("/api/auth/*", toNodeHandler(auth));
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("HELLO from Backend!")
-})
+// Body parsing (after auth handler)
+app.use(express.json());
 
-app.use("/api", routes)
+// Health check
+app.get("/", (_req: Request, res: Response) => {
+  res.json({ status: "ok", message: "Apex API is running" });
+});
+
+// API routes
+app.use("/api", routes);
 
 app.listen(PORT, async () => {
-  console.log(`🚀 server is running on: http://localhost:${PORT}`)
-})
+  console.log(`🚀 Server is running on: http://localhost:${PORT}`);
+  console.log(`📝 Auth endpoint: http://localhost:${PORT}/api/auth`);
+});
