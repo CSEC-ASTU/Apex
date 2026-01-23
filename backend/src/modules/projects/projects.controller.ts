@@ -25,7 +25,7 @@ export const ProjectsController = {
   async list(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-
+      console.log(userId)
       const projects = await ProjectsService.getUserProjects(userId);
 
       res.json({
