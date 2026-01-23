@@ -5,6 +5,7 @@ import { SSEEmit } from "../../utils/sse";
 
 export const AgentStateAnnotation = Annotation.Root({
   projectId: Annotation<string>,
+  userId: Annotation<string>,
   models: Annotation<string[]>,
   dbResult: Annotation<any>,
   final_DB_Info: Annotation<string | null>,

@@ -13,10 +13,4 @@ router.get('/', (_req, res) => {
     },
   })
 })
-
-router.use("/auth",authRoute)
-router.use("/projects",authMiddleware,projectRoute)
-router.use("/project",authMiddleware,fileRoute)
-router.use("/assistant",assistant)
-
 export default router
