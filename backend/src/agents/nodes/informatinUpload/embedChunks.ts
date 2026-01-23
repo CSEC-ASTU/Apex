@@ -13,7 +13,7 @@ export const embedChunks = async (state: any) => {
     for (let i = 0; i < chunks.length; i += batchSize) {
       const batch = chunks.slice(i, i + batchSize);
 
-      const response = await genAI.models.embedContent({
+      const response = await genAI!.models.embedContent({
         model: "gemini-embedding-001",
         contents: batch,
         config: { taskType: "RETRIEVAL_DOCUMENT" }

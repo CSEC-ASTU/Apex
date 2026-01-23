@@ -25,7 +25,6 @@ export const ProjectsController = {
   async list(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-
       const projects = await ProjectsService.getUserProjects(userId);
 
       res.json({
@@ -43,9 +42,9 @@ export const ProjectsController = {
   async getById(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const { projectId } = req.params;
+      const { projectId } = req.params as { projectId: string };
 
-      const project = await ProjectsService.getProjectById(projectId, userId);
+      const project = await ProjectsService.getProjectById(projectId as string, userId);
 
       res.json({
         success: true,
@@ -62,10 +61,10 @@ export const ProjectsController = {
   async update(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const { projectId } = req.params;
+      const { projectId } = req.params as { projectId: string };
       const data = UpdateProjectSchema.parse(req.body);
 
-      const project = await ProjectsService.updateProject(projectId, userId, data);
+      const project = await ProjectsService.updateProject(projectId as string, userId, data);
 
       res.json({
         success: true,
@@ -82,9 +81,9 @@ export const ProjectsController = {
   async remove(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const { projectId } = req.params;
+      const { projectId } = req.params as { projectId: string };
 
-      await ProjectsService.deleteProject(projectId, userId);
+      await ProjectsService.deleteProject(projectId as string, userId);
 
       res.json({
         success: true,

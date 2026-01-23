@@ -18,7 +18,7 @@ export const findInformationSource = async (state: any) => {
 
   let response;
   try {
-    response = await genAI.models.generateContent({
+    response = await genAI!.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Analyze this query and decide tools: ${query}`,
       config: {
