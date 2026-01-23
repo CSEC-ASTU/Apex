@@ -1,11 +1,11 @@
 import { z } from "zod";
 
-export const UpdateMissingInfoStatusSchema = z.object({
+export const UpdateMissingInformationSchema = z.object({
   addressed: z.boolean(),
   note: z.string().optional()
 });
 
-export const UpdateConflictStatusSchema = z.object({
+export const UpdateConflictSchema = z.object({
   resolved: z.boolean(),
   resolution: z.string().optional()
 });
