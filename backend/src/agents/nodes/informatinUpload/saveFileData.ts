@@ -1,7 +1,8 @@
 import { prisma } from "../../../config/database";
-import { ConflictSeverity, TaskOrigin } from "../../../generated/prisma";
+import { ConflictSeverity, TaskOrigin } from "../../../../generated/prisma";
 
 export const saveInformation = async (state: any) => {
+  const file = state.file;
   if (!state.success || !state.fileSummary) {
     return state;
   }
@@ -90,15 +91,6 @@ export const saveInformation = async (state: any) => {
         });
       }
 
-      /* -------------------------------
-         PROJECT PROGRESS UPDATE
-      -------------------------------- */
-    //   await tx.project.update({
-    //     where: { id: projectId },
-    //     data: {
-    //       progress: 0.25, // example: AI extraction completed
-    //     }
-    //   });
     });
 
     return {
