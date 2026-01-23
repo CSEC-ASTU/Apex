@@ -9,70 +9,68 @@ import type {
 
 // ============================================
 // Tasks API Service
+// Backend: /api/tasks/:projectId
 // ============================================
 
 export const tasksApi = {
   /**
    * Get all tasks for a project
+   * Backend: GET /api/tasks/:projectId
    */
   async getAll(
     projectId: string,
-    params?: { status?: TaskStatus; source?: 'agent' | 'user' }
+    params?: { status?: TaskStatus; origin?: 'AGENT' | 'USER' }
   ): Promise<ApiResponse<Task[]>> {
     return api.get<ApiResponse<Task[]>>(
-      `/projects/${projectId}/tasks`,
+      `/tasks/${projectId}`,
       { params: params as Record<string, string> }
     )
   },
 
   /**
-   * Get a single task by ID
-   */
-  async getById(projectId: string, taskId: string): Promise<ApiResponse<Task>> {
-    return api.get<ApiResponse<Task>>(`/projects/${projectId}/tasks/${taskId}`)
-  },
-
-  /**
-   * Create a new task manually
+   * Create a new task
+   * Backend: POST /api/tasks/:projectId
    */
   async create(projectId: string, data: CreateTaskInput): Promise<ApiResponse<Task>> {
-    return api.post<ApiResponse<Task>>(`/projects/${projectId}/tasks`, data)
+    return api.post<ApiResponse<Task>>(`/tasks/${projectId}`, data)
   },
 
   /**
    * Update a task
+   * Backend: PUT /api/tasks/:projectId/:taskId
    */
   async update(projectId: string, taskId: string, data: UpdateTaskInput): Promise<ApiResponse<Task>> {
-    return api.patch<ApiResponse<Task>>(`/projects/${projectId}/tasks/${taskId}`, data)
+    return api.put<ApiResponse<Task>>(`/tasks/${projectId}/${taskId}`, data)
   },
 
   /**
    * Delete a task
+   * Backend: DELETE /api/tasks/:projectId/:taskId
    */
   async delete(projectId: string, taskId: string): Promise<ApiResponse<void>> {
-    return api.delete<ApiResponse<void>>(`/projects/${projectId}/tasks/${taskId}`)
+    return api.delete<ApiResponse<void>>(`/tasks/${projectId}/${taskId}`)
   },
 
   /**
    * Update task status (convenience method)
    */
   async updateStatus(projectId: string, taskId: string, status: TaskStatus): Promise<ApiResponse<Task>> {
-    return api.patch<ApiResponse<Task>>(`/projects/${projectId}/tasks/${taskId}`, { status })
+    return api.put<ApiResponse<Task>>(`/tasks/${projectId}/${taskId}`, { status })
   },
 
   /**
-   * Generate tasks from requirements using AI
+   * Take ownership of a task
+   * Backend: PUT /api/tasks/:projectId/:taskId/own
    */
-  async generate(projectId: string): Promise<ApiResponse<Task[]>> {
-    return api.post<ApiResponse<Task[]>>(`/projects/${projectId}/tasks/generate`)
+  async takeOwnership(projectId: string, taskId: string): Promise<ApiResponse<Task>> {
+    return api.put<ApiResponse<Task>>(`/tasks/${projectId}/${taskId}/own`, {})
   },
 
   /**
-   * Get tasks linked to a specific requirement
+   * Generate/recommend tasks from requirements using AI
+   * Backend: POST /api/tasks/:projectId/recommend
    */
-  async getByRequirement(projectId: string, requirementId: string): Promise<ApiResponse<Task[]>> {
-    return api.get<ApiResponse<Task[]>>(
-      `/projects/${projectId}/requirements/${requirementId}/tasks`
-    )
+  async recommend(projectId: string): Promise<ApiResponse<Task[]>> {
+    return api.post<ApiResponse<Task[]>>(`/tasks/${projectId}/recommend`)
   },
 }
