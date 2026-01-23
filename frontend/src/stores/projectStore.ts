@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import type { Project, CreateProjectInput, UpdateProjectInput, DashboardStats } from '@/types'
 import { projectsApi } from '@/services/projects'
+import { documentsApi } from '@/services/documents'
+import { tasksApi } from '@/services/tasks'
 
 // ============================================
 // Mock Data (for development without backend)
@@ -90,17 +92,64 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   isDeleting: false,
   error: null,
 
-  // Fetch all projects
+  // Fetch all projects with enriched stats (documentCount, taskCount, progress)
   fetchProjects: async () => {
     set({ isLoading: true, error: null })
     try {
       if (USE_MOCK) {
-        await new Promise((r) => setTimeout(r, 500)) // Simulate delay
+        await new Promise((r) => setTimeout(r, 500))
         set({ projects: MOCK_PROJECTS, isLoading: false })
         return
       }
+      
       const response = await projectsApi.getAll()
-      set({ projects: response.data, isLoading: false })
+      const projects = Array.isArray(response) ? response : (response.data || [])
+      
+      if (projects.length === 0) {
+        set({ projects: [], isLoading: false })
+        return
+      }
+      
+      // Fetch documents and tasks for each project to compute progress
+      const enrichedProjects = await Promise.all(
+        projects.map(async (project) => {
+          try {
+            const [docsResponse, tasksResponse] = await Promise.all([
+              documentsApi.getAll(project.id),
+              tasksApi.getAll(project.id),
+            ])
+            
+            const docs = Array.isArray(docsResponse) 
+              ? docsResponse 
+              : (docsResponse.data || [])
+            const tasks = Array.isArray(tasksResponse) 
+              ? tasksResponse 
+              : (tasksResponse.data || [])
+            
+            const completedTasks = tasks.filter((t) => t.status === 'DONE').length
+            const progress = tasks.length > 0 
+              ? Math.round((completedTasks / tasks.length) * 100) 
+              : 0
+            
+            return {
+              ...project,
+              documentCount: docs.length,
+              taskCount: tasks.length,
+              progress,
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch stats for project ${project.id}:`, error)
+            return {
+              ...project,
+              documentCount: 0,
+              taskCount: 0,
+              progress: 0,
+            }
+          }
+        })
+      )
+      
+      set({ projects: enrichedProjects, isLoading: false })
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
     }
@@ -123,8 +172,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
 
-  // Fetch dashboard stats
-  // Note: Backend doesn't have /dashboard/stats endpoint yet, so we compute from projects
+  // Fetch dashboard stats from real API data
   fetchStats: async () => {
     set({ isLoading: true, error: null })
     try {
@@ -133,21 +181,121 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         set({ stats: MOCK_STATS, isLoading: false })
         return
       }
-      // Fetch projects and compute stats from them
-      const response = await projectsApi.getAll()
-      const projects = response.data || []
+      
+      console.log('📊 Fetching dashboard stats...')
+      
+      // Fetch all projects
+      const projectsResponse = await projectsApi.getAll()
+      console.log('📊 Raw projects response:', projectsResponse)
+      
+      // Handle both { data: [...] } and direct array responses
+      const projects = Array.isArray(projectsResponse) 
+        ? projectsResponse 
+        : (projectsResponse.data || [])
+      console.log('📊 Projects count:', projects.length)
+      
+      if (projects.length === 0) {
+        console.log('📊 No projects found, returning empty stats')
+        set({ 
+          stats: {
+            totalProjects: 0,
+            totalDocuments: 0,
+            totalTasks: 0,
+            completedTasks: 0,
+            averageProgress: 0,
+            recentProjects: [],
+          }, 
+          projects: [], 
+          isLoading: false 
+        })
+        return
+      }
+      
+      // Fetch documents and tasks for each project in parallel
+      const projectStats = await Promise.all(
+        projects.map(async (project) => {
+          try {
+            console.log(`📊 Fetching data for project ${project.id}...`)
+            const [docsResponse, tasksResponse] = await Promise.all([
+              documentsApi.getAll(project.id),
+              tasksApi.getAll(project.id),
+            ])
+            
+            console.log(`📊 Project ${project.id} docs response:`, docsResponse)
+            console.log(`📊 Project ${project.id} tasks response:`, tasksResponse)
+            
+            // Handle both { data: [...] } and direct array responses
+            const docs = Array.isArray(docsResponse) 
+              ? docsResponse 
+              : (docsResponse.data || [])
+            const tasks = Array.isArray(tasksResponse) 
+              ? tasksResponse 
+              : (tasksResponse.data || [])
+            
+            console.log(`📊 Project ${project.id}: ${docs.length} docs, ${tasks.length} tasks`)
+            
+            const completedTasks = tasks.filter((t) => t.status === 'DONE').length
+            
+            return {
+              projectId: project.id,
+              documentCount: docs.length,
+              taskCount: tasks.length,
+              completedTasks,
+              progress: tasks.length > 0 
+                ? Math.round((completedTasks / tasks.length) * 100) 
+                : 0,
+            }
+          } catch (error) {
+            console.error(`📊 Failed to fetch stats for project ${project.id}:`, error)
+            return {
+              projectId: project.id,
+              documentCount: 0,
+              taskCount: 0,
+              completedTasks: 0,
+              progress: 0,
+            }
+          }
+        })
+      )
+      
+      console.log('📊 Project stats:', projectStats)
+      
+      // Aggregate stats
+      const totalDocuments = projectStats.reduce((acc, p) => acc + p.documentCount, 0)
+      const totalTasks = projectStats.reduce((acc, p) => acc + p.taskCount, 0)
+      const completedTasks = projectStats.reduce((acc, p) => acc + p.completedTasks, 0)
+      const totalProgress = projectStats.reduce((acc, p) => acc + p.progress, 0)
+      const averageProgress = projects.length > 0 ? totalProgress / projects.length : 0
+      
+      // Enrich projects with stats
+      const enrichedProjects = projects.map((project) => {
+        const pStats = projectStats.find((ps) => ps.projectId === project.id)
+        return {
+          ...project,
+          documentCount: pStats?.documentCount || 0,
+          taskCount: pStats?.taskCount || 0,
+          progress: pStats?.progress || 0,
+        }
+      })
+      
+      // Sort by updatedAt for recent projects
+      const recentProjects = [...enrichedProjects]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 5)
+      
       const stats: DashboardStats = {
         totalProjects: projects.length,
-        totalDocuments: projects.reduce((acc, p) => acc + (p.documentCount || 0), 0),
-        totalTasks: projects.reduce((acc, p) => acc + (p.taskCount || 0), 0),
-        completedTasks: 0, // Will be computed when tasks endpoint is available
-        averageProgress: projects.length > 0 
-          ? projects.reduce((acc, p) => acc + (p.progress || 0), 0) / projects.length 
-          : 0,
-        recentProjects: projects.slice(0, 5),
+        totalDocuments,
+        totalTasks,
+        completedTasks,
+        averageProgress,
+        recentProjects,
       }
-      set({ stats, projects, isLoading: false })
+      
+      console.log('📊 Dashboard stats:', stats)
+      set({ stats, projects: enrichedProjects, isLoading: false })
     } catch (error) {
+      console.error('📊 Error fetching stats:', error)
       set({ error: (error as Error).message, isLoading: false })
     }
   },

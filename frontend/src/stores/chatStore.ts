@@ -1,19 +1,8 @@
 import { create } from 'zustand'
-import type { ChatMessage, SendMessageInput } from '@/types'
-import { chatApi } from '@/services/chat'
+import type { ChatMessage } from '@/types'
+import { config } from '@/config'
 
-// ============================================
-// Mock Data
-// ============================================
-
-const MOCK_RESPONSES: Record<string, string> = {
-  default: "Based on your project documents, I can help answer questions about your requirements. What would you like to know?",
-  auth: "According to the requirements document, user authentication should support email/password signup and signin, as well as OAuth providers like Google and GitHub. The security requirements also specify that passwords must be hashed using bcrypt.",
-  product: "The product catalog requirements specify that you need to display products with images, descriptions, and prices. It should also support filtering by category and search functionality.",
-  cart: "The shopping cart feature should allow users to add and remove items. For logged-in users, the cart should persist across sessions.",
-  performance: "The non-functional requirements state that page load time should be under 3 seconds, and API response time should be under 500ms for the 95th percentile.",
-}
-
+// USE_MOCK = false means we use real backend
 const USE_MOCK = false
 
 // ============================================
@@ -24,6 +13,7 @@ interface ChatState {
   messages: ChatMessage[]
   isLoading: boolean
   isSending: boolean
+  streamingContent: string // For SSE streaming
   error: string | null
   
   fetchHistory: (projectId: string) => Promise<void>
@@ -33,37 +23,17 @@ interface ChatState {
 }
 
 // ============================================
-// Helper: Get mock response based on keywords
-// ============================================
-
-function getMockResponse(question: string): string {
-  const q = question.toLowerCase()
-  if (q.includes('auth') || q.includes('login') || q.includes('signup') || q.includes('password')) {
-    return MOCK_RESPONSES.auth
-  }
-  if (q.includes('product') || q.includes('catalog') || q.includes('listing')) {
-    return MOCK_RESPONSES.product
-  }
-  if (q.includes('cart') || q.includes('shopping')) {
-    return MOCK_RESPONSES.cart
-  }
-  if (q.includes('performance') || q.includes('speed') || q.includes('load time')) {
-    return MOCK_RESPONSES.performance
-  }
-  return MOCK_RESPONSES.default
-}
-
-// ============================================
 // Store Implementation
 // ============================================
 
-export const useChatStore = create<ChatState>((set, get) => ({
+export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   isLoading: false,
   isSending: false,
+  streamingContent: '',
   error: null,
 
-  fetchHistory: async (projectId: string) => {
+  fetchHistory: async (_projectId: string) => {
     set({ isLoading: true, error: null })
     try {
       if (USE_MOCK) {
@@ -71,8 +41,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set({ messages: [], isLoading: false })
         return
       }
-      const response = await chatApi.getHistory(projectId)
-      set({ messages: response.data, isLoading: false })
+      // Backend doesn't have chat history endpoint yet
+      // Just keep existing messages in memory
+      set({ isLoading: false })
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
     }
@@ -90,26 +61,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       messages: [...state.messages, userMessage],
       isSending: true,
+      streamingContent: '',
       error: null,
     }))
 
     try {
       if (USE_MOCK) {
-        // Simulate AI thinking
         await new Promise((r) => setTimeout(r, 1500))
         const aiMessage: ChatMessage = {
           id: `msg-${Date.now() + 1}`,
           projectId,
           role: 'assistant',
-          content: getMockResponse(content),
-          sources: [
-            {
-              documentId: 'doc-1',
-              documentName: 'requirements.pdf',
-              chunk: 'Relevant section from the requirements document...',
-              relevanceScore: 0.92,
-            },
-          ],
+          content: 'This is a mock response.',
           createdAt: new Date().toISOString(),
         }
         set((state) => ({
@@ -119,27 +82,90 @@ export const useChatStore = create<ChatState>((set, get) => ({
         return
       }
 
-      const response = await chatApi.sendMessage(projectId, { content })
-      set((state) => ({
-        messages: [...state.messages, response.data],
-        isSending: false,
-      }))
+      console.log('💬 Sending message to assistant:', content)
+      
+      // Use SSE for streaming response
+      // Backend: POST /api/assistant/:projectId/ask-function
+      const response = await fetch(
+        `${config.apiBaseUrl}/assistant/${projectId}/ask-function`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: content }),
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      // Check if it's SSE or regular response
+      const contentType = response.headers.get('content-type') || ''
+      
+      if (contentType.includes('text/event-stream')) {
+        // Handle SSE streaming
+        const reader = response.body?.getReader()
+        if (!reader) {
+          throw new Error('No response body')
+        }
+
+        const decoder = new TextDecoder()
+        let fullContent = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          fullContent += chunk
+          
+          // Update streaming content for real-time display
+          set({ streamingContent: fullContent })
+        }
+
+        // Add final AI message
+        const aiMessage: ChatMessage = {
+          id: `msg-${Date.now() + 1}`,
+          projectId,
+          role: 'assistant',
+          content: fullContent,
+          createdAt: new Date().toISOString(),
+        }
+        set((state) => ({
+          messages: [...state.messages, aiMessage],
+          isSending: false,
+          streamingContent: '',
+        }))
+      } else {
+        // Handle regular JSON response
+        const data = await response.text()
+        console.log('💬 Assistant response:', data)
+        
+        const aiMessage: ChatMessage = {
+          id: `msg-${Date.now() + 1}`,
+          projectId,
+          role: 'assistant',
+          content: data,
+          createdAt: new Date().toISOString(),
+        }
+        set((state) => ({
+          messages: [...state.messages, aiMessage],
+          isSending: false,
+        }))
+      }
     } catch (error) {
+      console.error('💬 Error sending message:', error)
       set({ error: (error as Error).message, isSending: false })
     }
   },
 
-  clearHistory: async (projectId: string) => {
-    try {
-      if (USE_MOCK) {
-        set({ messages: [] })
-        return
-      }
-      await chatApi.clearHistory(projectId)
-      set({ messages: [] })
-    } catch (error) {
-      set({ error: (error as Error).message })
-    }
+  clearHistory: async (_projectId: string) => {
+    // Backend doesn't have clear history endpoint
+    // Just clear local messages
+    set({ messages: [] })
   },
 
   clearError: () => set({ error: null }),
