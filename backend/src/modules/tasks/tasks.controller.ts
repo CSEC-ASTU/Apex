@@ -5,7 +5,7 @@ import { CreateTaskSchema, UpdateTaskSchema } from "./tasks.schema";
 export const TasksController = {
   async recommend(req: Request, res: Response) {
     try {
-      const { projectId } = req.params;
+      const projectId = req.params.projectId as string;
 
       // Example AI output (later replace with real agent)
       const recommendedTasks = [
@@ -23,7 +23,7 @@ export const TasksController = {
 
   async create(req: Request, res: Response) {
     try {
-      const { projectId } = req.params;
+      const projectId = req.params.projectId as string;
       const data = CreateTaskSchema.parse(req.body);
 
       const task = await TasksService.createTask(projectId, data);
@@ -36,7 +36,7 @@ export const TasksController = {
 
   async list(req: Request, res: Response) {
     try {
-      const { projectId } = req.params;
+      const projectId = req.params.projectId as string;
       const { origin } = req.query;
 
       const tasks = await TasksService.getTasks(
@@ -52,7 +52,8 @@ export const TasksController = {
 
   async update(req: Request, res: Response) {
     try {
-      const { projectId, taskId } = req.params;
+      const projectId = req.params.projectId as string;
+      const taskId = req.params.taskId as string;
       const data = UpdateTaskSchema.parse(req.body);
 
       const task = await TasksService.updateTask(taskId, projectId, data);
@@ -69,7 +70,8 @@ export const TasksController = {
 
   async takeOwnership(req: Request, res: Response) {
     try {
-      const { projectId, taskId } = req.params;
+      const projectId = req.params.projectId as string;
+      const taskId = req.params.taskId as string;
 
       const task = await TasksService.takeOwnership(taskId, projectId);
 
@@ -81,7 +83,8 @@ export const TasksController = {
 
   async remove(req: Request, res: Response) {
     try {
-      const { projectId, taskId } = req.params;
+      const projectId = req.params.projectId as string;
+      const taskId = req.params.taskId as string;
 
       await TasksService.deleteTask(taskId, projectId);
 
