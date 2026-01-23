@@ -43,7 +43,7 @@ Rules:
       }
     ];
 
-    const response = await genAI.models.generateContent({
+    const response = await genAI!.models.generateContent({
       model: "gemini-3-flash-preview",
       contents,
       config: {
