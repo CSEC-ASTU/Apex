@@ -1,8 +1,9 @@
 import { prisma } from "../../../config/database";
-import { ConflictSeverity, TaskOrigin } from "../../../../generated/prisma";
+import { ConflictSeverity, DocumentStatus, TaskOrigin } from "../../../../generated/prisma";
 
 export const saveInformation = async (state: any) => {
   const file = state.file;
+
   if (!state.success || !state.fileSummary) {
     return state;
   }
@@ -12,6 +13,20 @@ export const saveInformation = async (state: any) => {
 
   try {
     await prisma.$transaction(async (tx) => {
+
+      /* -------------------------------
+         DOCUMENT (ADDED ONLY)
+      -------------------------------- */
+      if (file) {
+        await tx.document.create({
+          data: {
+            fileName: file.originalname,
+            fileType: file.mimetype,
+            status: DocumentStatus.PENDING,
+            projectId,
+          },
+        });
+      }
 
       /* -------------------------------
          FUNCTIONAL REQUIREMENTS
@@ -90,7 +105,6 @@ export const saveInformation = async (state: any) => {
           }))
         });
       }
-
     });
 
     return {
