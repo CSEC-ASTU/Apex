@@ -16,6 +16,7 @@ export default function ChatPage() {
     messages,
     isLoading,
     isSending,
+    streamingContent,
     fetchHistory,
     sendMessage,
     clearHistory,
@@ -32,9 +33,9 @@ export default function ChatPage() {
   }, [projectId, fetchProject, fetchHistory])
 
   useEffect(() => {
-    // Scroll to bottom when new messages arrive
+    // Scroll to bottom when new messages arrive or streaming content updates
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, streamingContent])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -182,18 +183,22 @@ export default function ChatPage() {
                     </div>
                   ))}
                   
-                  {/* Typing indicator */}
+                  {/* Streaming content or typing indicator */}
                   {isSending && (
                     <div className="flex gap-3">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                         <Bot className="h-4 w-4" />
                       </div>
-                      <div className="rounded-lg px-4 py-3 bg-muted">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" />
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0.1s]" />
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0.2s]" />
-                        </div>
+                      <div className="rounded-lg px-4 py-3 bg-muted max-w-[80%]">
+                        {streamingContent ? (
+                          <p className="text-sm whitespace-pre-wrap">{streamingContent}</p>
+                        ) : (
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" />
+                            <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0.1s]" />
+                            <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0.2s]" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
