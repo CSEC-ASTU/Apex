@@ -1,91 +1,121 @@
 import { prisma } from "../../config/database";
 
 export const ProjectDataService = {
-  async getRequirements(projectId: string, userId: string) {
+  async getFunctionalRequirements(projectId: string, userId: string) {
     try {
       const project = await prisma.project.findFirst({
         where: { id: projectId, userId },
-        include: {
-          functionalRequirements: true,
-          nonFunctionalRequirements: true
-        }
+        include: { functionalRequirements: true }
       });
 
       if (!project) {
         return { success: false, error: "Project not found or access denied" };
       }
 
-      return {
-        success: true,
-        data: {
-          functional: project.functionalRequirements,
-          nonFunctional: project.nonFunctionalRequirements
-        }
-      };
+      return { success: true, data: project.functionalRequirements };
     } catch (error: any) {
       return { success: false, error: error.message };
     }
   },
 
-  async getMissingInformation(projectId: string, userId: string) {
+  async getNonFunctionalRequirements(projectId: string, userId: string) {
     try {
       const project = await prisma.project.findFirst({
         where: { id: projectId, userId },
-        include: { missingInformation: true }
+        include: { nonFunctionalRequirements: true }
       });
 
       if (!project) {
         return { success: false, error: "Project not found or access denied" };
       }
 
-      return {
-        success: true,
-        data: {
-          addressed: project.missingInformation.filter(m => m.addressed),
-          unaddressed: project.missingInformation.filter(m => !m.addressed)
-        }
-      };
+      return { success: true, data: project.nonFunctionalRequirements };
     } catch (error: any) {
       return { success: false, error: error.message };
     }
   },
 
-  async getConflicts(projectId: string, userId: string) {
+  async getAddressedMissingInformation(projectId: string, userId: string) {
     try {
-      const project = await prisma.project.findFirst({
-        where: { id: projectId, userId },
-        include: { conflicts: true }
+      const data = await prisma.missingInformation.findMany({
+        where: {
+          projectId,
+          addressed: true,
+          project: { userId }
+        }
       });
 
-      if (!project) {
-        return { success: false, error: "Project not found or access denied" };
-      }
-
-      return {
-        success: true,
-        data: {
-          resolved: project.conflicts.filter(c => c.resolved),
-          unresolved: project.conflicts.filter(c => !c.resolved)
-        }
-      };
+      return { success: true, data };
     } catch (error: any) {
       return { success: false, error: error.message };
     }
   },
 
-  async updateMissingInfoStatus(
+  async getUnaddressedMissingInformation(projectId: string, userId: string) {
+    try {
+      const data = await prisma.missingInformation.findMany({
+        where: {
+          projectId,
+          addressed: false,
+          project: { userId }
+        }
+      });
+
+      return { success: true, data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getResolvedConflicts(projectId: string, userId: string) {
+    try {
+      const data = await prisma.conflict.findMany({
+        where: {
+          projectId,
+          resolved: true,
+          project: { userId }
+        }
+      });
+
+      return { success: true, data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getUnresolvedConflicts(projectId: string, userId: string) {
+    try {
+      const data = await prisma.conflict.findMany({
+        where: {
+          projectId,
+          resolved: false,
+          project: { userId }
+        }
+      });
+
+      return { success: true, data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async updateMissingInformationStatus(
     projectId: string,
     missingInfoId: string,
     userId: string,
     data: { addressed: boolean; note?: string }
   ) {
     try {
-      const project = await prisma.project.findFirst({
-        where: { id: projectId, userId }
+      const exists = await prisma.missingInformation.findFirst({
+        where: {
+          id: missingInfoId,
+          projectId,
+          project: { userId }
+        }
       });
 
-      if (!project) {
-        return { success: false, error: "Project not found or access denied" };
+      if (!exists) {
+        return { success: false, error: "Missing information not found" };
       }
 
       const updated = await prisma.missingInformation.update({
@@ -106,12 +136,16 @@ export const ProjectDataService = {
     data: { resolved: boolean; resolution?: string }
   ) {
     try {
-      const project = await prisma.project.findFirst({
-        where: { id: projectId, userId }
+      const exists = await prisma.conflict.findFirst({
+        where: {
+          id: conflictId,
+          projectId,
+          project: { userId }
+        }
       });
 
-      if (!project) {
-        return { success: false, error: "Project not found or access denied" };
+      if (!exists) {
+        return { success: false, error: "Conflict not found" };
       }
 
       const updated = await prisma.conflict.update({
