@@ -11,6 +11,14 @@ interface DocumentCardProps {
 }
 
 export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardProps) {
+  // Debug logging
+  console.log('📄 DocumentCard received:', document)
+  
+  // Normalize status (backend uses PENDING/PROCESSED/FAILED, frontend expects lowercase)
+  const normalizedStatus = (document.status || 'pending').toLowerCase() as 'pending' | 'processing' | 'completed' | 'failed'
+  // Map PROCESSED to completed
+  const displayStatus = normalizedStatus === 'processed' ? 'completed' : normalizedStatus
+  
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + " B"
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB"
@@ -28,7 +36,7 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
   }
 
   const getStatusIcon = () => {
-    switch (document.status) {
+    switch (displayStatus) {
       case "completed":
         return <CheckCircle className="h-4 w-4 text-green-500" />
       case "processing":
@@ -37,11 +45,13 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
         return <Clock className="h-4 w-4 text-yellow-500" />
       case "failed":
         return <AlertCircle className="h-4 w-4 text-red-500" />
+      default:
+        return <Clock className="h-4 w-4 text-gray-500" />
     }
   }
 
   const getStatusBadge = () => {
-    switch (document.status) {
+    switch (displayStatus) {
       case "completed":
         return <Badge variant="success">Processed</Badge>
       case "processing":
@@ -50,15 +60,30 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
         return <Badge variant="warning">Pending</Badge>
       case "failed":
         return <Badge variant="destructive">Failed</Badge>
+      default:
+        return <Badge variant="secondary">{displayStatus}</Badge>
     }
+  }
+
+  // Get file extension from MIME type or filename
+  const getFileExtension = (): string => {
+    const fileType = document.fileType || ''
+    if (fileType.includes('pdf')) return 'pdf'
+    if (fileType.includes('word') || fileType.includes('docx')) return 'docx'
+    if (fileType.includes('text') || fileType.includes('txt')) return 'txt'
+    // Try to get from filename
+    const ext = document.fileName?.split('.').pop()?.toLowerCase()
+    return ext || 'unknown'
   }
 
   const getFileIcon = () => {
     const iconClass = "h-10 w-10"
-    switch (document.fileType) {
+    const ext = getFileExtension()
+    switch (ext) {
       case "pdf":
         return <FileText className={`${iconClass} text-red-500`} />
       case "docx":
+      case "doc":
         return <FileText className={`${iconClass} text-blue-500`} />
       case "txt":
         return <FileText className={`${iconClass} text-gray-500`} />
@@ -81,20 +106,20 @@ export function DocumentCard({ document, onDelete, onReprocess }: DocumentCardPr
               {getStatusBadge()}
             </div>
             <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-              <span>{formatFileSize(document.fileSize)}</span>
+              <span>{formatFileSize(document.fileSize || 0)}</span>
               <span>•</span>
-              <span>{document.fileType.toUpperCase()}</span>
+              <span>{getFileExtension().toUpperCase()}</span>
               <span>•</span>
-              <span>{formatDate(document.createdAt)}</span>
+              <span>{document.createdAt ? formatDate(document.createdAt) : 'N/A'}</span>
             </div>
-            {document.status === "failed" && document.errorMessage && (
+            {displayStatus === "failed" && document.errorMessage && (
               <p className="mt-2 text-sm text-destructive">{document.errorMessage}</p>
             )}
           </div>
 
           {/* Actions */}
           <div className="flex items-center gap-1">
-            {document.status === "failed" && onReprocess && (
+            {displayStatus === "failed" && onReprocess && (
               <Button
                 variant="ghost"
                 size="icon"

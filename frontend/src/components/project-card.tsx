@@ -9,12 +9,16 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const progress = project.progress || 0
+  const documentCount = project.documentCount || 0
+  const taskCount = project.taskCount || 0
+
   const progressColor =
-    project.progress >= 75
+    progress >= 75
       ? "bg-green-500"
-      : project.progress >= 50
+      : progress >= 50
       ? "bg-yellow-500"
-      : project.progress >= 25
+      : progress >= 25
       ? "bg-blue-500"
       : "bg-gray-300"
 
@@ -29,9 +33,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <Card className="hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <CardTitle className="text-lg line-clamp-1">{project.name}</CardTitle>
-            <Badge variant={project.progress === 100 ? "success" : "secondary"}>
-              {project.progress}%
+            <CardTitle className="text-lg line-clamp-1">{project.title}</CardTitle>
+            <Badge variant={progress === 100 ? "success" : "secondary"}>
+              {progress}%
             </Badge>
           </div>
           <CardDescription className="line-clamp-2">
@@ -43,12 +47,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Progress</span>
-              <span>{project.progress}%</span>
+              <span>{progress}%</span>
             </div>
             <div className="h-2 w-full rounded-full bg-muted">
               <div
                 className={`h-2 rounded-full ${progressColor} transition-all`}
-                style={{ width: `${project.progress}%` }}
+                style={{ width: `${progress}%` }}
               />
             </div>
           </div>
@@ -57,11 +61,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <FileText className="h-4 w-4" />
-              <span>{project.documentCount} docs</span>
+              <span>{documentCount} docs</span>
             </div>
             <div className="flex items-center gap-1">
               <CheckSquare className="h-4 w-4" />
-              <span>{project.taskCount} tasks</span>
+              <span>{taskCount} tasks</span>
             </div>
           </div>
 

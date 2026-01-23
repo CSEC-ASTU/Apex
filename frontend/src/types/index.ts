@@ -28,43 +28,45 @@ export interface ApiError {
 
 export interface Project {
   id: string
-  name: string
+  title: string
   description?: string
+  status: 'ACTIVE' | 'COMPLETED'
   userId: string
   progress: number // 0-100 percentage
-  documentCount: number
-  taskCount: number
+  documentCount?: number
+  taskCount?: number
   createdAt: string
   updatedAt: string
 }
 
 export interface CreateProjectInput {
-  name: string
+  title: string
   description?: string
 }
 
 export interface UpdateProjectInput {
-  name?: string
+  title?: string
   description?: string
+  status?: 'ACTIVE' | 'COMPLETED'
 }
 
 // ============================================
 // Document Types
 // ============================================
 
-export type DocumentFileType = 'pdf' | 'docx' | 'txt'
-export type DocumentStatus = 'pending' | 'processing' | 'completed' | 'failed'
+// Backend uses uppercase: PENDING, PROCESSED, FAILED
+export type DocumentStatus = 'PENDING' | 'PROCESSED' | 'FAILED'
 
 export interface Document {
   id: string
   projectId: string
   fileName: string
-  fileType: DocumentFileType
-  fileSize: number // in bytes
+  fileType: string // e.g., "application/pdf"
   status: DocumentStatus
-  errorMessage?: string
   createdAt: string
-  updatedAt: string
+  // Optional fields for UI
+  fileSize?: number
+  updatedAt?: string
 }
 
 export interface UploadDocumentInput {
@@ -76,38 +78,34 @@ export interface UploadDocumentInput {
 // ============================================
 
 export type RequirementType = 'functional' | 'non-functional'
-export type RequirementStatus = 'pending' | 'implemented' | 'verified'
 
 export interface Requirement {
   id: string
+  code: string // e.g., "FR-01", "NFR-01"
+  description: string
   projectId: string
-  documentId: string
-  type: RequirementType
-  title: string
-  content: string
-  priority?: 'low' | 'medium' | 'high'
-  status: RequirementStatus
-  linkedTaskIds: string[]
   createdAt: string
-  updatedAt: string
+  // Frontend-added fields for display
+  type?: RequirementType
 }
 
 // ============================================
 // Task Types
 // ============================================
 
-export type TaskStatus = 'todo' | 'in_progress' | 'completed'
-export type TaskSource = 'agent' | 'user'
+// Backend uses uppercase: TODO, IN_PROGRESS, DONE
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE'
+// Backend uses uppercase: AGENT, USER
+export type TaskOrigin = 'AGENT' | 'USER'
 
 export interface Task {
   id: string
   projectId: string
-  requirementId?: string
   title: string
   description?: string
   status: TaskStatus
-  source: TaskSource
-  weight: number // For progress calculation (1-10)
+  origin: TaskOrigin
+  weight: number
   createdAt: string
   updatedAt: string
 }
@@ -115,7 +113,6 @@ export interface Task {
 export interface CreateTaskInput {
   title: string
   description?: string
-  requirementId?: string
   weight?: number
 }
 

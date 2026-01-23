@@ -38,9 +38,10 @@ export default function TasksPage() {
 
   const progress = getProgress()
 
-  const todoTasks = tasks.filter((t) => t.status === "todo")
-  const inProgressTasks = tasks.filter((t) => t.status === "in_progress")
-  const completedTasks = tasks.filter((t) => t.status === "completed")
+  // Backend uses uppercase status: TODO, IN_PROGRESS, DONE
+  const todoTasks = tasks.filter((t) => t.status === "TODO")
+  const inProgressTasks = tasks.filter((t) => t.status === "IN_PROGRESS")
+  const completedTasks = tasks.filter((t) => t.status === "DONE")
 
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
     if (projectId) {
@@ -71,7 +72,7 @@ export default function TasksPage() {
     <DashboardLayout
       breadcrumbs={[
         { label: "Projects", href: "/dashboard/projects" },
-        { label: currentProject?.name || "Project", href: `/dashboard/projects/${projectId}/documents` },
+        { label: currentProject?.title || "Project", href: `/dashboard/projects/${projectId}/documents` },
         { label: "Tasks" },
       ]}
     >
