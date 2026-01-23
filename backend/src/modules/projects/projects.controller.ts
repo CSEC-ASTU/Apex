@@ -71,7 +71,7 @@ export const ProjectsController = {
   async getById(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const { projectId } = req.params;
+      const { projectId } = req.params as { projectId: string };
 
       const project = await ProjectsService.getProjectById(projectId as string, userId);
 
@@ -90,7 +90,7 @@ export const ProjectsController = {
   async update(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const { projectId } = req.params;
+      const { projectId } = req.params as { projectId: string };
       const data = UpdateProjectSchema.parse(req.body);
 
       const project = await ProjectsService.updateProject(projectId as string, userId, data);
@@ -119,7 +119,7 @@ export const ProjectsController = {
   async remove(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const { projectId } = req.params;
+      const { projectId } = req.params as { projectId: string };
 
       await ProjectsService.deleteProject(projectId as string, userId);
 

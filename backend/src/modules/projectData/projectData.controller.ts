@@ -5,9 +5,10 @@ import {
 } from "./projectData.schema";
 import { ProjectDataService } from "./projectData.service";
 
+
 export const ProjectDataController = {
   async getFunctionalRequirements(req: Request, res: Response) {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
     const result = await ProjectDataService.getFunctionalRequirements(
       projectId,
       req.user!.id
@@ -16,7 +17,7 @@ export const ProjectDataController = {
   },
 
   async getNonFunctionalRequirements(req: Request, res: Response) {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
     const result = await ProjectDataService.getNonFunctionalRequirements(
       projectId,
       req.user!.id
@@ -25,7 +26,7 @@ export const ProjectDataController = {
   },
 
   async getAddressedMissingInformation(req: Request, res: Response) {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
     const result = await ProjectDataService.getAddressedMissingInformation(
       projectId,
       req.user!.id
@@ -34,7 +35,7 @@ export const ProjectDataController = {
   },
 
   async getUnaddressedMissingInformation(req: Request, res: Response) {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
     const result = await ProjectDataService.getUnaddressedMissingInformation(
       projectId,
       req.user!.id
@@ -43,7 +44,7 @@ export const ProjectDataController = {
   },
 
   async getResolvedConflicts(req: Request, res: Response) {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
     const result = await ProjectDataService.getResolvedConflicts(
       projectId,
       req.user!.id
@@ -52,7 +53,7 @@ export const ProjectDataController = {
   },
 
   async getUnresolvedConflicts(req: Request, res: Response) {
-    const { projectId } = req.params;
+    const { projectId } = req.params as { projectId: string };
     const result = await ProjectDataService.getUnresolvedConflicts(
       projectId,
       req.user!.id
@@ -63,7 +64,7 @@ export const ProjectDataController = {
   async updateMissingInformationStatus(req: Request, res: Response) {
     try {
       const data = UpdateMissingInformationSchema.parse(req.body);
-      const { projectId, missingInfoId } = req.params;
+      const { projectId,missingInfoId } = req.params as { projectId: string,missingInfoId:string };;
 
       const result = await ProjectDataService.updateMissingInformationStatus(
         projectId,
@@ -81,7 +82,7 @@ export const ProjectDataController = {
   async updateConflictStatus(req: Request, res: Response) {
     try {
       const data = UpdateConflictSchema.parse(req.body);
-      const { projectId, conflictId } = req.params;
+      const { projectId, conflictId } = req.params as {projectId:string,conflictId:string};
 
       const result = await ProjectDataService.updateConflictStatus(
         projectId,

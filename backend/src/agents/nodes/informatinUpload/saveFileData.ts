@@ -1,5 +1,5 @@
 import { prisma } from "../../../config/database";
-import { ConflictSeverity, DocumentStatus, TaskOrigin } from "../../../../generated/prisma";
+import { ConflictSeverity, DocumentStatus, TaskOrigin } from "../../../generated/prisma/enums";
 
 export const saveInformation = async (state: any) => {
   const file = state.file;
