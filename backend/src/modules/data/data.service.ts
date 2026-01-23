@@ -1,3 +1,4 @@
+import { prisma } from "../../config/database";
 import { chunkText } from "../../utils/chunk.text";
 import { getGeminiEmbedding } from "../../utils/embedChunk";
 

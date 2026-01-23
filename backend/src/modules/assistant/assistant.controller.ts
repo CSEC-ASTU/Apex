@@ -12,8 +12,10 @@ export const assistantController = {
     const emit = createSSEEmitter(res);
 
     const { query } = req.body;
-    const { projectId } = req.params;
-    const userId = (req as any).user?.userId;
+    const rawProjectId = req.params.projectId;
+    const projectId = Array.isArray(rawProjectId)
+      ? rawProjectId[0]
+      : rawProjectId; const userId = (req as any).user?.userId;
 
     if (!query) {
       emit("error", { message: "Query is required." });

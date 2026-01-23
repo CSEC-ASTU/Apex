@@ -8,8 +8,10 @@ import { textVectorAgent } from "../../agents/graphs/textVectorGraph";
 export const dataController = {
     async addTextData(req: Request, res: Response) {
         const { text } = req.body;
-        const { projectId } = req.params;
-        const userId = (req as any).user?.userId;
+        const rawProjectId = req.params.projectId;
+        const projectId = Array.isArray(rawProjectId)
+            ? rawProjectId[0]
+            : rawProjectId; const userId = (req as any).user?.userId;
 
         if (!text) {
             return res.status(400).json({
@@ -67,8 +69,10 @@ export const dataController = {
         try {
             const file = req.file;
             const userId = (req as any).user?.userId;
-            const { projectId } = req.params;
-
+            const rawProjectId = req.params.projectId;
+            const projectId = Array.isArray(rawProjectId)
+                ? rawProjectId[0]
+                : rawProjectId;
             if (!file) {
                 return res.status(400).json({
                     success: false,
