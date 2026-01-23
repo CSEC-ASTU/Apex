@@ -52,8 +52,14 @@ export const TasksService = {
 
   /** Convert AGENT task to USER task */
   async takeOwnership(taskId: string, projectId: string) {
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, projectId }
+    });
+
+    if (!task) return null;
+
     return prisma.task.update({
-      where: { id: taskId },
+      where: { id: taskId, projectId },
       data: { origin: "USER" }
     });
   },
