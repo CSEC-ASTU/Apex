@@ -1,37 +1,21 @@
 import { config } from '@/config'
 import type {
   Document,
-  DocumentStatus,
   ApiResponse,
 } from '@/types'
 
-// Helper to map backend status to frontend status
-function mapStatus(backendStatus: string | undefined): DocumentStatus {
-  const status = (backendStatus || 'pending').toUpperCase()
-  switch (status) {
-    case 'PROCESSED':
-      return 'completed'
-    case 'PENDING':
-      return 'pending'
-    case 'FAILED':
-      return 'failed'
-    default:
-      return 'pending'
-  }
-}
-
 // ============================================
 // Document API Service
-// Matches backend routes: /api/project/:projectId/...
+// Backend: /api/project/:projectId/documents
 // ============================================
 
 export const documentsApi = {
   /**
    * Get all documents for a project
-   * Fetches from project details endpoint which includes documents
+   * Backend: GET /api/project/:projectId/documents
    */
   async getAll(projectId: string): Promise<ApiResponse<Document[]>> {
-    const response = await fetch(`${config.apiBaseUrl}/projects/${projectId}`, {
+    const response = await fetch(`${config.apiBaseUrl}/project/${projectId}/documents`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -42,24 +26,9 @@ export const documentsApi = {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     const result = await response.json()
-    console.log('📄 Raw project response for documents:', result.data?.documents)
+    console.log('📄 Documents response:', result)
     
-    // Extract and map documents from project response
-    const rawDocs = result.data?.documents || []
-    const mappedDocs: Document[] = rawDocs.map((doc: any) => ({
-      id: doc.id,
-      projectId: doc.projectId || projectId,
-      fileName: doc.fileName,
-      fileType: doc.fileType || 'unknown',
-      fileSize: doc.fileSize || 0,
-      // Map backend status (PENDING/PROCESSED/FAILED) to frontend (pending/completed/failed)
-      status: mapStatus(doc.status),
-      errorMessage: doc.errorMessage,
-      createdAt: doc.createdAt || new Date().toISOString(),
-      updatedAt: doc.updatedAt || new Date().toISOString(),
-    }))
-    
-    return { success: true, data: mappedDocs }
+    return { success: true, data: result.data || [] }
   },
 
   /**
@@ -90,25 +59,18 @@ export const documentsApi = {
           console.log('📤 Upload response:', response)
           
           // Backend returns { success, data: { document, analysis, vectorized } }
-          // Extract the document and add file size from the uploaded file
           const doc = response.data?.document || response.data
-          const documentWithSize: Document = {
+          const document: Document = {
             id: doc.id,
             projectId: doc.projectId || projectId,
             fileName: doc.fileName,
-            fileType: doc.fileType || file.name.split('.').pop() || 'unknown',
-            fileSize: file.size, // Get size from the uploaded file
-            status: (doc.status || 'pending').toLowerCase() as 'pending' | 'processing' | 'completed' | 'failed',
+            fileType: doc.fileType || file.type || 'unknown',
+            status: doc.status || 'PENDING',
             createdAt: doc.createdAt || new Date().toISOString(),
-            updatedAt: doc.updatedAt || new Date().toISOString(),
+            fileSize: file.size,
           }
           
-          // Map PROCESSED -> completed, PENDING -> pending, FAILED -> failed
-          if (documentWithSize.status === 'processed') {
-            documentWithSize.status = 'completed'
-          }
-          
-          resolve({ success: true, data: documentWithSize })
+          resolve({ success: true, data: document })
         } else {
           reject(new Error(`Upload failed: ${xhr.status}`))
         }
