@@ -1,4 +1,3 @@
-import { prisma } from "../../config/prisma";
 import { chunkText } from "../../utils/chunk.text";
 import { getGeminiEmbedding } from "../../utils/embedChunk";
 
