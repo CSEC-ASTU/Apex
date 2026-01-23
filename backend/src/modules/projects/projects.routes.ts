@@ -1,10 +1,9 @@
 import { Router } from "express";
 import { ProjectsController } from "./projects.controller";
-import { authMiddleware } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
-router.use(authMiddleware);
+//router.use(/**authMiddleware */);
 
 router.post("/", ProjectsController.create);
 router.get("/", ProjectsController.list);

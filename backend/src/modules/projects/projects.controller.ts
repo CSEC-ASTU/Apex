@@ -45,7 +45,7 @@ export const ProjectsController = {
       const userId = (req as any).id;
       const { projectId } = req.params;
 
-      const project = await ProjectsService.getProjectById(projectId, userId);
+      const project = await ProjectsService.getProjectById(projectId as string, userId);
 
       res.json({
         success: true,
@@ -65,7 +65,7 @@ export const ProjectsController = {
       const { projectId } = req.params;
       const data = UpdateProjectSchema.parse(req.body);
 
-      const project = await ProjectsService.updateProject(projectId, userId, data);
+      const project = await ProjectsService.updateProject(projectId as string, userId, data);
 
       res.json({
         success: true,
@@ -84,7 +84,7 @@ export const ProjectsController = {
     const userId = (req as any).user.userId;
     const { projectId } = req.params;
 
-    await ProjectsService.deleteProject(projectId, userId);
+    await ProjectsService.deleteProject(projectId as string, userId);
 
     res.json({
       success: true,
