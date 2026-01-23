@@ -98,4 +98,25 @@ export const dataService = {
     }
   },
 
+  async getDocuments(projectId: string) {
+  try {
+    const documents = await prisma.document.findMany({
+      where: {
+        projectId
+      }
+    });
+
+    return {
+      success: true,
+      data: documents,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Unable to fetch documents",
+    };
+  }
+}
+
+
 };
