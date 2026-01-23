@@ -127,7 +127,7 @@ export const dataController = {
 
         const result = await dataService.addMissingData(
             text,
-            projectId,
+            projectId as string,
             missingdataId
         );
 

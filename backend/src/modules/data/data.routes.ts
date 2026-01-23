@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { dataController } from "./data.controller";
 import { upload } from "../../config/multer";
+import { dataController } from "./data.controller";
 
 const router = Router();
 
