@@ -20,4 +20,10 @@ export const auth = betterAuth({
       maxAge: 5 * 60, // 5 minutes - reduces DB calls
     },
   },
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "none", // Required for cross-origin requests
+      secure: true, // Required when sameSite is "none"
+    },
+  },
 });
