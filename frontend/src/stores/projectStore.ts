@@ -81,7 +81,7 @@ interface ProjectState {
 // Store Implementation
 // ============================================
 
-export const useProjectStore = create<ProjectState>((set, _get) => ({
+export const useProjectStore = create<ProjectState>((set) => ({
   // Initial state
   projects: [],
   currentProject: null,
