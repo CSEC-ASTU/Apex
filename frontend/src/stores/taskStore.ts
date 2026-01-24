@@ -2,99 +2,8 @@ import { create } from 'zustand'
 import type { Task, TaskStatus, CreateTaskInput, UpdateTaskInput } from '@/types'
 import { tasksApi } from '@/services/tasks'
 
-// ============================================
-// Mock Data
-// ============================================
-
-const MOCK_TASKS: Record<string, Task[]> = {
-  '1': [
-    {
-      id: 'task-1',
-      projectId: '1',
-      requirementId: 'req-1',
-      title: 'Implement email/password signup',
-      description: 'Create signup form with validation and backend endpoint',
-      status: 'completed',
-      source: 'agent',
-      weight: 3,
-      createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'task-2',
-      projectId: '1',
-      requirementId: 'req-1',
-      title: 'Implement email/password signin',
-      description: 'Create signin form with session management',
-      status: 'completed',
-      source: 'agent',
-      weight: 3,
-      createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'task-3',
-      projectId: '1',
-      requirementId: 'req-2',
-      title: 'Create product listing page',
-      description: 'Display products in a grid with images and prices',
-      status: 'in_progress',
-      source: 'agent',
-      weight: 5,
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'task-4',
-      projectId: '1',
-      requirementId: 'req-5',
-      title: 'Setup HTTPS and security headers',
-      description: 'Configure SSL certificates and security middleware',
-      status: 'completed',
-      source: 'agent',
-      weight: 2,
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'task-5',
-      projectId: '1',
-      title: 'Design database schema',
-      description: 'Create Prisma schema for all entities',
-      status: 'completed',
-      source: 'user',
-      weight: 4,
-      createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'task-6',
-      projectId: '1',
-      title: 'Implement search functionality',
-      description: 'Add product search with filters',
-      status: 'todo',
-      source: 'user',
-      weight: 4,
-      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ],
-  '2': [
-    {
-      id: 'task-7',
-      projectId: '2',
-      requirementId: 'req-6',
-      title: 'Create task model and API',
-      status: 'completed',
-      source: 'agent',
-      weight: 5,
-      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ],
-}
-
-const USE_MOCK = true
+// USE_MOCK = false means we use real backend
+const USE_MOCK = false
 
 // ============================================
 // Store Interface
@@ -133,12 +42,15 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     try {
       if (USE_MOCK) {
         await new Promise((r) => setTimeout(r, 400))
-        set({ tasks: MOCK_TASKS[projectId] || [], isLoading: false })
+        set({ tasks: [], isLoading: false })
         return
       }
+      console.log('📝 Fetching tasks for project:', projectId)
       const response = await tasksApi.getAll(projectId)
-      set({ tasks: response.data, isLoading: false })
+      console.log('📝 Tasks response:', response.data)
+      set({ tasks: response.data || [], isLoading: false })
     } catch (error) {
+      console.error('📝 Error fetching tasks:', error)
       set({ error: (error as Error).message, isLoading: false })
     }
   },
@@ -152,9 +64,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           id: `task-${Date.now()}`,
           projectId,
           ...data,
-          status: 'todo',
-          source: 'user',
-          weight: data.weight || 3,
+          status: 'TODO',
+          origin: 'USER',
+          weight: data.weight || 1,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
@@ -164,13 +76,16 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         }))
         return newTask
       }
+      console.log('📝 Creating task:', data)
       const response = await tasksApi.create(projectId, data)
+      console.log('📝 Task created:', response.data)
       set((state) => ({
         tasks: [...state.tasks, response.data],
         isCreating: false,
       }))
       return response.data
     } catch (error) {
+      console.error('📝 Error creating task:', error)
       set({ error: (error as Error).message, isCreating: false })
       return null
     }
@@ -240,42 +155,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     try {
       if (USE_MOCK) {
         await new Promise((r) => setTimeout(r, 2000))
-        const newTasks: Task[] = [
-          {
-            id: `task-${Date.now()}`,
-            projectId,
-            title: 'Implement shopping cart UI',
-            description: 'Create cart page with item list and totals',
-            status: 'todo',
-            source: 'agent',
-            weight: 4,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: `task-${Date.now() + 1}`,
-            projectId,
-            title: 'Create checkout flow',
-            description: 'Implement multi-step checkout with payment',
-            status: 'todo',
-            source: 'agent',
-            weight: 5,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ]
-        set((state) => ({
-          tasks: [...state.tasks, ...newTasks],
-          isGenerating: false,
-        }))
+        set({ isGenerating: false })
         return
       }
-      const response = await tasksApi.generate(projectId)
+      console.log('📝 Generating/recommending tasks for project:', projectId)
+      const response = await tasksApi.recommend(projectId)
+      console.log('📝 Generated tasks:', response.data)
       set((state) => ({
-        tasks: [...state.tasks, ...response.data],
+        tasks: [...state.tasks, ...(response.data || [])],
         isGenerating: false,
       }))
     } catch (error) {
+      console.error('📝 Error generating tasks:', error)
       set({ error: (error as Error).message, isGenerating: false })
     }
   },
@@ -284,11 +175,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const { tasks } = get()
     const totalWeight = tasks.reduce((sum, t) => sum + t.weight, 0)
     const completedWeight = tasks
-      .filter((t) => t.status === 'completed')
+      .filter((t) => t.status === 'DONE')
       .reduce((sum, t) => sum + t.weight, 0)
     const percentage = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0
     return {
-      completed: tasks.filter((t) => t.status === 'completed').length,
+      completed: tasks.filter((t) => t.status === 'DONE').length,
       total: tasks.length,
       percentage,
     }

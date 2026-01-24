@@ -1,20 +1,9 @@
 import { create } from 'zustand'
-import type { ChatMessage, SendMessageInput } from '@/types'
-import { chatApi } from '@/services/chat'
+import type { ChatMessage } from '@/types'
+import { config } from '@/config'
 
-// ============================================
-// Mock Data
-// ============================================
-
-const MOCK_RESPONSES: Record<string, string> = {
-  default: "Based on your project documents, I can help answer questions about your requirements. What would you like to know?",
-  auth: "According to the requirements document, user authentication should support email/password signup and signin, as well as OAuth providers like Google and GitHub. The security requirements also specify that passwords must be hashed using bcrypt.",
-  product: "The product catalog requirements specify that you need to display products with images, descriptions, and prices. It should also support filtering by category and search functionality.",
-  cart: "The shopping cart feature should allow users to add and remove items. For logged-in users, the cart should persist across sessions.",
-  performance: "The non-functional requirements state that page load time should be under 3 seconds, and API response time should be under 500ms for the 95th percentile.",
-}
-
-const USE_MOCK = true
+// USE_MOCK = false means we use real backend
+const USE_MOCK = false
 
 // ============================================
 // Store Interface
@@ -24,6 +13,8 @@ interface ChatState {
   messages: ChatMessage[]
   isLoading: boolean
   isSending: boolean
+  streamingContent: string // For SSE streaming - shows final response as it builds
+  progressMessage: string // Shows current progress stage
   error: string | null
   
   fetchHistory: (projectId: string) => Promise<void>
@@ -33,37 +24,46 @@ interface ChatState {
 }
 
 // ============================================
-// Helper: Get mock response based on keywords
-// ============================================
-
-function getMockResponse(question: string): string {
-  const q = question.toLowerCase()
-  if (q.includes('auth') || q.includes('login') || q.includes('signup') || q.includes('password')) {
-    return MOCK_RESPONSES.auth
-  }
-  if (q.includes('product') || q.includes('catalog') || q.includes('listing')) {
-    return MOCK_RESPONSES.product
-  }
-  if (q.includes('cart') || q.includes('shopping')) {
-    return MOCK_RESPONSES.cart
-  }
-  if (q.includes('performance') || q.includes('speed') || q.includes('load time')) {
-    return MOCK_RESPONSES.performance
-  }
-  return MOCK_RESPONSES.default
-}
-
-// ============================================
 // Store Implementation
 // ============================================
 
-export const useChatStore = create<ChatState>((set, get) => ({
+// Helper to parse SSE events from a chunk of text
+function parseSSEEvents(text: string): Array<{ event: string; data: string }> {
+  const events: Array<{ event: string; data: string }> = []
+  const lines = text.split('\n')
+  
+  let currentEvent = ''
+  let currentData = ''
+  
+  for (const line of lines) {
+    if (line.startsWith('event: ')) {
+      currentEvent = line.slice(7).trim()
+    } else if (line.startsWith('data: ')) {
+      currentData = line.slice(6)
+    } else if (line === '' && currentEvent && currentData) {
+      events.push({ event: currentEvent, data: currentData })
+      currentEvent = ''
+      currentData = ''
+    }
+  }
+  
+  // Handle case where last event doesn't have trailing newline
+  if (currentEvent && currentData) {
+    events.push({ event: currentEvent, data: currentData })
+  }
+  
+  return events
+}
+
+export const useChatStore = create<ChatState>((set) => ({
   messages: [],
   isLoading: false,
   isSending: false,
+  streamingContent: '',
+  progressMessage: '',
   error: null,
 
-  fetchHistory: async (projectId: string) => {
+  fetchHistory: async (_projectId: string) => {
     set({ isLoading: true, error: null })
     try {
       if (USE_MOCK) {
@@ -71,8 +71,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set({ messages: [], isLoading: false })
         return
       }
-      const response = await chatApi.getHistory(projectId)
-      set({ messages: response.data, isLoading: false })
+      // Backend doesn't have chat history endpoint yet
+      // Just keep existing messages in memory
+      set({ isLoading: false })
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
     }
@@ -90,26 +91,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       messages: [...state.messages, userMessage],
       isSending: true,
+      streamingContent: '',
+      progressMessage: '',
       error: null,
     }))
 
     try {
       if (USE_MOCK) {
-        // Simulate AI thinking
         await new Promise((r) => setTimeout(r, 1500))
         const aiMessage: ChatMessage = {
           id: `msg-${Date.now() + 1}`,
           projectId,
           role: 'assistant',
-          content: getMockResponse(content),
-          sources: [
-            {
-              documentId: 'doc-1',
-              documentName: 'requirements.pdf',
-              chunk: 'Relevant section from the requirements document...',
-              relevanceScore: 0.92,
-            },
-          ],
+          content: 'This is a mock response.',
           createdAt: new Date().toISOString(),
         }
         set((state) => ({
@@ -119,27 +113,166 @@ export const useChatStore = create<ChatState>((set, get) => ({
         return
       }
 
-      const response = await chatApi.sendMessage(projectId, { content })
-      set((state) => ({
-        messages: [...state.messages, response.data],
-        isSending: false,
-      }))
+      console.log('💬 Sending message to assistant:', content)
+      
+      // Use SSE for streaming response
+      // Backend: POST /api/assistant/:projectId/ask-function
+      const response = await fetch(
+        `${config.apiBaseUrl}/assistant/${projectId}/ask-function`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: content }),
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      // Check if it's SSE or regular response
+      const contentType = response.headers.get('content-type') || ''
+      
+      if (contentType.includes('text/event-stream')) {
+        // Handle SSE streaming
+        const reader = response.body?.getReader()
+        if (!reader) {
+          throw new Error('No response body')
+        }
+
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let finalResponse = ''
+        let hasError = false
+        let errorMessage = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          buffer += chunk
+          
+          // Parse SSE events from the buffer
+          const events = parseSSEEvents(buffer)
+          
+          for (const evt of events) {
+            console.log('💬 SSE Event:', evt.event, evt.data)
+            
+            try {
+              const data = JSON.parse(evt.data)
+              
+              switch (evt.event) {
+                case 'progress':
+                  // Update progress message
+                  set({ progressMessage: data.message || data.stage || 'Processing...' })
+                  break
+                  
+                case 'error':
+                  // Handle error event
+                  hasError = true
+                  errorMessage = data.message || 'An error occurred'
+                  console.error('💬 SSE Error:', errorMessage)
+                  break
+                  
+                case 'final':
+                  // Extract the actual response
+                  if (data.success && data.response) {
+                    finalResponse = data.response
+                    set({ streamingContent: finalResponse })
+                  } else if (data.response) {
+                    finalResponse = data.response
+                    set({ streamingContent: finalResponse })
+                  }
+                  break
+                  
+                default:
+                  console.log('💬 Unknown SSE event:', evt.event)
+              }
+            } catch (parseError) {
+              console.warn('💬 Failed to parse SSE data:', evt.data)
+            }
+          }
+          
+          // Clear processed events from buffer
+          buffer = ''
+        }
+
+        // If we got an error but also a final response, still show the response
+        if (finalResponse) {
+          const aiMessage: ChatMessage = {
+            id: `msg-${Date.now() + 1}`,
+            projectId,
+            role: 'assistant',
+            content: finalResponse,
+            createdAt: new Date().toISOString(),
+          }
+          set((state) => ({
+            messages: [...state.messages, aiMessage],
+            isSending: false,
+            streamingContent: '',
+            progressMessage: '',
+            error: hasError ? errorMessage : null,
+          }))
+        } else if (hasError) {
+          // Only error, no response
+          set({ 
+            error: errorMessage, 
+            isSending: false,
+            progressMessage: '',
+          })
+        } else {
+          // No response and no error - something went wrong
+          set({ 
+            error: 'No response received from assistant', 
+            isSending: false,
+            progressMessage: '',
+          })
+        }
+      } else {
+        // Handle regular JSON response
+        const data = await response.text()
+        console.log('💬 Assistant response:', data)
+        
+        // Try to parse as JSON
+        let responseContent = data
+        try {
+          const parsed = JSON.parse(data)
+          if (parsed.response) {
+            responseContent = parsed.response
+          } else if (parsed.data?.response) {
+            responseContent = parsed.data.response
+          }
+        } catch {
+          // Use raw text if not JSON
+        }
+        
+        const aiMessage: ChatMessage = {
+          id: `msg-${Date.now() + 1}`,
+          projectId,
+          role: 'assistant',
+          content: responseContent,
+          createdAt: new Date().toISOString(),
+        }
+        set((state) => ({
+          messages: [...state.messages, aiMessage],
+          isSending: false,
+          progressMessage: '',
+        }))
+      }
     } catch (error) {
+      console.error('💬 Error sending message:', error)
       set({ error: (error as Error).message, isSending: false })
     }
   },
 
-  clearHistory: async (projectId: string) => {
-    try {
-      if (USE_MOCK) {
-        set({ messages: [] })
-        return
-      }
-      await chatApi.clearHistory(projectId)
-      set({ messages: [] })
-    } catch (error) {
-      set({ error: (error as Error).message })
-    }
+  clearHistory: async (_projectId: string) => {
+    // Backend doesn't have clear history endpoint
+    // Just clear local messages
+    set({ messages: [] })
   },
 
   clearError: () => set({ error: null }),

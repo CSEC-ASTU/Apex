@@ -4,7 +4,6 @@ import type {
   CreateProjectInput,
   UpdateProjectInput,
   ApiResponse,
-  PaginatedResponse,
   DashboardStats,
 } from '@/types'
 
@@ -15,9 +14,10 @@ import type {
 export const projectsApi = {
   /**
    * Get all projects for the current user
+   * Backend returns: { success: true, data: Project[] }
    */
-  async getAll(params?: { page?: number; limit?: number }): Promise<PaginatedResponse<Project>> {
-    return api.get<PaginatedResponse<Project>>('/projects', { params: params as Record<string, string> })
+  async getAll(): Promise<ApiResponse<Project[]>> {
+    return api.get<ApiResponse<Project[]>>('/projects')
   },
 
   /**

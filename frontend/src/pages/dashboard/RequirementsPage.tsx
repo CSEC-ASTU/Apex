@@ -1,10 +1,9 @@
 import { useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
 import { DashboardLayout } from "@/components/layout"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
 import { RequirementCard } from "@/components/requirement-card"
 import { ListChecks, FileText } from "lucide-react"
 import { useRequirementStore, useProjectStore } from "@/stores"
@@ -42,7 +41,7 @@ export default function RequirementsPage() {
     <DashboardLayout
       breadcrumbs={[
         { label: "Projects", href: "/dashboard/projects" },
-        { label: currentProject?.name || "Project", href: `/dashboard/projects/${projectId}/documents` },
+        { label: currentProject?.title || "Project", href: `/dashboard/projects/${projectId}/documents` },
         { label: "Requirements" },
       ]}
     >

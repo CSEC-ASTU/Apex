@@ -24,7 +24,6 @@ export function FileUploader({
   const [error, setError] = useState<string | null>(null)
 
   const validateFile = (file: File): string | null => {
-    const allowedTypes = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"]
     const allowedExtensions = [".pdf", ".docx", ".txt"]
     
     const extension = "." + file.name.split(".").pop()?.toLowerCase()

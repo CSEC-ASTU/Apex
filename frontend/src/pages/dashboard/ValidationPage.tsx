@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useParams } from "react-router-dom"
 import { DashboardLayout } from "@/components/layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -78,7 +78,7 @@ export default function ValidationPage() {
     <DashboardLayout
       breadcrumbs={[
         { label: "Projects", href: "/dashboard/projects" },
-        { label: currentProject?.name || "Project", href: `/dashboard/projects/${projectId}/documents` },
+        { label: currentProject?.title || "Project", href: `/dashboard/projects/${projectId}/documents` },
         { label: "Validation" },
       ]}
     >

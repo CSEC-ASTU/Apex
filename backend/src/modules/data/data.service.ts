@@ -1,0 +1,122 @@
+import { prisma } from "../../config/database";
+import { chunkText } from "../../utils/chunk.text";
+import { getGeminiEmbedding } from "../../utils/embedChunk";
+
+export const dataService = {
+
+  async processText(text: string, projectId: string) {
+    try {
+      const chunks = await chunkText(text);
+
+      if (!chunks.length) {
+        return {
+          success: false,
+          error: "Text could not be chunked",
+        };
+      }
+
+      const embeddingsRes = await getGeminiEmbedding(chunks, true);
+
+      if (!embeddingsRes.success) {
+        return embeddingsRes;
+      }
+
+      const embeddings = embeddingsRes.data!;
+
+      const records = chunks.map((chunk, i) => ({
+        content: chunk,
+        vector: embeddings[i],
+        projectId,
+      }));
+      await prisma.chunk.createMany({
+        data: records,
+      });
+      return {
+        success: true,
+        chunksStored: records.length,
+      };
+    } catch (error) {
+      console.error("addMissingData error:", error);
+
+      return {
+        success: false,
+        error: "Failed to add missing data",
+      };
+    }
+  },
+
+  async addMissingData(
+    text: string,
+    projectId: string,
+    missingdataId?: string | null
+  ) {
+    try {
+      const chunks = await chunkText(text);
+
+      if (!chunks.length) {
+        return {
+          success: false,
+          error: "Text could not be chunked",
+        };
+      }
+
+      const embeddingsRes = await getGeminiEmbedding(chunks, true);
+
+      if (!embeddingsRes.success) {
+        return embeddingsRes;
+      }
+
+      const embeddings = embeddingsRes.data!;
+
+      const records = chunks.map((chunk, i) => ({
+        content: chunk,
+        vector: embeddings[i],
+        projectId,
+      }));
+
+      await prisma.chunk.createMany({
+        data: records,
+      });
+
+      if (missingdataId) {
+        await prisma.missingInformation.delete({
+          where: { id: missingdataId },
+        });
+      }
+
+      return {
+        success: true,
+        chunksStored: records.length,
+      };
+    } catch (error: any) {
+      console.error("addMissingData error:", error);
+
+      return {
+        success: false,
+        error: "Failed to add missing data",
+      };
+    }
+  },
+
+  async getDocuments(projectId: string) {
+  try {
+    const documents = await prisma.document.findMany({
+      where: {
+        projectId
+      }
+    });
+
+    return {
+      success: true,
+      data: documents,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Unable to fetch documents",
+    };
+  }
+}
+
+
+};
